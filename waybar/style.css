@@ -11,6 +11,14 @@ window#waybar {
 	color: #e6e6e6;
 }
 
+window#waybar .modules-left {
+	padding-left: 4px;
+}
+
+window#waybar .modules-right {
+	padding-right: 4px;
+}
+
 /* módulos padrão */
 #custom-icon,
 #pulseaudio,
@@ -21,8 +29,8 @@ window#waybar {
 #tray {
 	background: rgba(255, 255, 255, 0.045);
 	border-radius: 12px;
-	padding: 0 12px;
-	margin: 4px 0;
+	padding: 0 6px;
+	margin: 2px 0;
 	color: #e6e6e6;
 }
 
@@ -115,4 +123,26 @@ window#waybar {
 #tray {
 	padding-right: 10px;
 	padding-left: 10px;
+}
+
+/* power */
+#custom-power {
+	background: rgba(255, 80, 80, 0.15);
+	color: #ff5555;
+
+	border-radius: 12px;
+	margin: 4px 2px;
+
+	padding: 0 10px;
+
+	min-height: 24px; /* 👈 garante altura fixa */
+}
+
+#custom-power label {
+	margin: 0;
+	padding: 0;
+}
+
+#custom-power:hover {
+	background: rgba(255, 80, 80, 0.3);
 }

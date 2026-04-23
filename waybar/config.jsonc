@@ -24,6 +24,7 @@
 		"memory",
 		"tray",
 		"clock",
+		"custom/power",
 	],
 
 	"custom/icon": {
@@ -130,5 +131,11 @@
 		},
 		"on-click": "~/.config/waybar/scripts/calendar-toggle.sh",
 		"on-click-middle": "mode",
+	},
+
+	"custom/power": {
+		"format": "⏻",
+		"on-click": "~/.config/waybar/scripts/power-menu.sh",
+		"tooltip": false,
 	},
 }
