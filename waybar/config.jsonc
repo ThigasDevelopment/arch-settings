@@ -1,0 +1,134 @@
+{
+	"layer": "top",
+	"position": "top",
+
+	"passthrough": false,
+	"reload_on_style_change": true,
+
+	"spacing": 8,
+
+	"margin-top": 6,
+	"margin-left": 10,
+	"margin-right": 10,
+	"margin-bottom": 0,
+
+	"modules-left": ["custom/icon", "hyprland/window"],
+	"modules-center": ["hyprland/workspaces"],
+	"modules-right": [
+		"custom/spotify-prev",
+		"custom/spotify",
+		"custom/spotify-next",
+		"pulseaudio",
+		"network",
+		"cpu",
+		"memory",
+		"tray",
+		"clock",
+	],
+
+	"custom/icon": {
+		"format": "󰣇",
+	},
+
+	"hyprland/window": {
+		"separate-outputs": true,
+		"max-length": 40,
+		"format": "{class}",
+		"rewrite": {
+			"": "dracoN* arch",
+			"kitty": "dracoN* arch",
+			"vesktop": "Discord",
+			"zen": "Browser",
+			"firefox": "Firefox",
+			"spotify": "Spotify",
+		},
+	},
+
+	"hyprland/workspaces": {
+		"format": "{name}",
+		"disable-scroll": false,
+		"all-outputs": true,
+		"show-special": true,
+		"special-visible-only": false,
+		"format-icons": {
+			"1": "1",
+			"2": "2",
+			"3": "3",
+			"4": "4",
+			"5": "5",
+			"6": "6",
+			"7": "7",
+			"8": "8",
+			"9": "9",
+			"10": "10",
+			"active": "",
+			"default": "",
+		},
+	},
+
+	"custom/spotify-prev": {
+		"format": "󰒮",
+		"on-click": "playerctl -p spotify previous",
+		"tooltip": false,
+	},
+
+	"custom/spotify": {
+		"exec": "~/.config/waybar/scripts/spotify-status.sh",
+		"interval": 2,
+		"return-type": "json",
+		"on-click": "playerctl -p spotify play-pause",
+		"on-click-right": "spotify",
+		"on-scroll-up": "playerctl -p spotify next",
+		"on-scroll-down": "playerctl -p spotify previous",
+	},
+
+	"custom/spotify-next": {
+		"format": "󰒭",
+		"on-click": "playerctl -p spotify next",
+		"tooltip": false,
+	},
+
+	"pulseaudio": {
+		"format": "{icon}  {volume}%",
+		"format-muted": "󰝟  muted",
+		"format-icons": {
+			"default": ["󰕿", "󰖀", "󰕾"],
+		},
+		"on-click": "pavucontrol",
+	},
+
+	"network": {
+		"format-wifi": "󰖩  {essid}",
+		"format-ethernet": "󰈀  ethernet",
+		"format-disconnected": "󰖪  offline",
+		"tooltip-format": "{ifname} via {gwaddr}",
+	},
+
+	"cpu": {
+		"format": "󰍛  {usage}%",
+	},
+
+	"memory": {
+		"format": "󰘚  {}%",
+	},
+
+	"tray": {
+		"icon-size": 16,
+		"spacing": 5,
+		"show-passive-items": true,
+	},
+
+	"clock": {
+		"format": "󰥔  {:%H:%M}",
+		"format-alt": "󰃭  {:%d/%m/%Y}",
+		"interval": 1,
+		"tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
+		"calendar": {
+			"format": {
+				"today": "<span color='#eed49f'><b>{}</b></span>",
+			},
+		},
+		"on-click": "~/.config/waybar/scripts/calendar-toggle.sh",
+		"on-click-middle": "mode",
+	},
+}

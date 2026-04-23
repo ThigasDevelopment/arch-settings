@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+PLAYER="spotify"
+
+if ! playerctl -l 2>/dev/null | grep -qx "$PLAYER"; then
+  echo '{"text":"󰓇 offline","tooltip":"Spotify fechado","class":"offline"}'
+  exit 0
+fi
+
+STATUS=$(playerctl -p "$PLAYER" status 2>/dev/null)
+TITLE=$(playerctl -p "$PLAYER" metadata title 2>/dev/null)
+ARTIST=$(playerctl -p "$PLAYER" metadata artist 2>/dev/null)
+
+if [ -z "$TITLE" ]; then
+  echo '{"text":"󰓇 spotify","tooltip":"Spotify aberto","class":"idle"}'
+  exit 0
+fi
+
+TEXT="$ARTIST - $TITLE"
+SHORT=$(printf "%s" "$TEXT" | cut -c1-32)
+
+if [ "$STATUS" = "Playing" ]; then
+  CLASS="playing"
+else
+  CLASS="paused"
+fi
+
+printf '{"text":" %s","tooltip":"%s","class":"%s"}\n' "$SHORT" "$TEXT" "$CLASS"
