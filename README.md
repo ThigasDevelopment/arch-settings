@@ -89,18 +89,18 @@ pkill waybar && waybar
 - `SUPER + W`: fechar janela ativa
 - `SUPER + E`: abrir gerenciador de arquivos (`nautilus`)
 - `SUPER + F`: alternar janela flutuante
-- `SUPER + R`: abrir/fechar launcher de apps (drun)
+- `SUPER + R`: alternar launcher de apps (`wofi --show drun`, com `pkill` previo para fechar se ja estiver aberto)
 - `SUPER + C`: pseudo tile (dwindle)
 - `SUPER + J`: toggle split (dwindle)
 - `SUPER + B`: abrir navegador (`firefox`)
 - `SUPER + V`: abrir `cursor-clip`
 - `SUPER + Y`: abrir VS Code (`code`)
-- `SUPER + P`: abrir menu de energia (`~/.config/waybar/scripts/power-menu.sh`)
+- `SUPER + P`: abrir menu de energia (`.config/waybar/scripts/power-menu.sh`)
 - `SUPER + O`: abrir `opencode` no terminal
-- `SUPER + Return`: abrir Spotlight (`~/.config/wofi/scripts/spotlight.sh`)
+- `SUPER + Return`: alternar Spotlight (`~/.config/wofi/scripts/spotlight.sh`, com `pkill` previo do `wofi`)
 - `SUPER + Escape`: abrir `hyprshutdown` (fallback para `hyprctl dispatch exit`)
 - `SUPER + SHIFT + S`: screenshot de selecao e copiar para clipboard (`grim + slurp + wl-copy`)
-- `SUPER + SHIFT + B`: abrir QMK configurator no Chromium em modo app
+- `SUPER + SHIFT + B`: abrir QMK configurator no Chromium em modo app (`https://qmk.top/`)
 - `SUPER + SHIFT + Escape`: abrir `btop` no terminal
 
 #### Spotlight (`wofi/scripts/spotlight.sh`)

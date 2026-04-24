@@ -112,6 +112,7 @@
 
 	"cpu": {
 		"format": "󰍛  {usage}%",
+		"on-click": "hyprctl dispatch exec \"[workspace empty] kitty -e btop --preset 1\"",
 	},
 
 	"temperature": {
@@ -122,6 +123,7 @@
 
 	"memory": {
 		"format": "󰘚  {}%",
+		"on-click": "hyprctl dispatch exec \"[workspace empty] kitty -e btop --preset 2\"",
 	},
 
 	"disk#home": {
