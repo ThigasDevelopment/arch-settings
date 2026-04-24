@@ -67,8 +67,8 @@
 		"exec": "~/.config/waybar/scripts/spotify-status.sh",
 		"interval": 2,
 		"return-type": "json",
+		"align": 0.5,
 		"on-click": "playerctl -p spotify play-pause",
-		"on-click-right": "spotify",
 		"on-scroll-up": "playerctl -p spotify next",
 		"on-scroll-down": "playerctl -p spotify previous",
 	},
@@ -88,7 +88,7 @@
 		"on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
 		"on-scroll-up": "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+",
 		"on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
-		"tooltip": true
+		"tooltip": true,
 	},
 
 	"pulseaudio": {
@@ -128,14 +128,14 @@
 		"interval": 30,
 		"path": "/home",
 		"format": "󰋊  {percentage_used}%",
-		"tooltip-format": "Home (/home): {used}/{total} ({percentage_used}%)"
+		"tooltip-format": "Home (/home): {used}/{total} ({percentage_used}%)",
 	},
 
 	"disk#storage": {
 		"interval": 30,
 		"path": "/media/storage",
 		"format": "  {percentage_used}%",
-		"tooltip-format": "Apple HDD (/media/storage): {used}/{total} ({percentage_used}%)"
+		"tooltip-format": "Apple HDD (/media/storage): {used}/{total} ({percentage_used}%)",
 	},
 
 	"custom/notification": {

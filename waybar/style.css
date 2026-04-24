@@ -90,36 +90,26 @@ window#waybar .modules-right {
 	color: #ffffff;
 }
 
-/* spotify */
 #custom-spotify-prev,
 #custom-spotify,
 #custom-spotify-next {
-	margin: 4px 0;
-	color: #d8f7e4;
-}
-
-#custom-spotify-prev,
-#custom-spotify-next {
 	background: rgba(30, 215, 96, 0.12);
 	border-radius: 6px;
-	padding: 0 10px;
-	margin-right: 2px;
-	min-width: 16px;
+
+	color: #d8f7e4;
+
+	margin: 4px 2px 4px 0;
+	padding: 0;
+
+	min-width: 36px;
 	min-height: 28px;
 }
 
-#custom-spotify {
-	background: linear-gradient(
-		90deg,
-		rgba(30, 215, 96, 0.18),
-		rgba(30, 215, 96, 0.1)
-	);
-	border-radius: 6px;
-	padding: 0 12px;
-	margin-right: 2px;
-	min-height: 28px;
-	font-weight: 700;
-	transition: all 0.2s ease;
+#custom-spotify-prev label,
+#custom-spotify label,
+#custom-spotify-next label {
+	padding: 0;
+	margin: 0;
 }
 
 #custom-spotify-prev:hover,
