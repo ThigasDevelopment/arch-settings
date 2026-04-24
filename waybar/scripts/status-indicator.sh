@@ -12,7 +12,8 @@ elif command -v pactl >/dev/null 2>&1; then
   pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null | grep -q "yes" && muted="yes"
 fi
 
-net_state="Offline"
+net_state="Ethernet Offline"
+net_icon="󰖪"
 if command -v nmcli >/dev/null 2>&1; then
   if nmcli -t -f TYPE,STATE device status 2>/dev/null | grep -q '^wifi:connected$'; then
     ssid=$(nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | awk -F: '$1=="yes" {print $2; exit}')
@@ -21,20 +22,17 @@ if command -v nmcli >/dev/null 2>&1; then
     else
       net_state="Wi-Fi Online"
     fi
+	net_icon="󰖩"
   elif nmcli -t -f TYPE,STATE device status 2>/dev/null | grep -q '^ethernet:connected$'; then
     net_state="Ethernet Online"
+	net_icon="󰌗"
   elif nmcli -t -f STATE general 2>/dev/null | grep -q '^connected'; then
-    net_state="Online"
+    net_state="Rede Online"
+	net_icon="󰌗"
   fi
 elif ip route 2>/dev/null | grep -q '^default '; then
-  net_state="Online"
-fi
-
-notif_state="Ativas"
-if command -v swaync-client >/dev/null 2>&1; then
-  if [ "$(swaync-client -D 2>/dev/null)" = "true" ]; then
-    notif_state="DND"
-  fi
+  net_state="Ethernet Online"
+  net_icon="󰌗"
 fi
 
 if [ "$muted" = "yes" ]; then
@@ -47,7 +45,7 @@ else
   audio_icon="󰕾"
 fi
 
-text="${audio_icon}  "
-tooltip="Volume: ${vol}%\nRede: ${net_state}\nNotificacoes: ${notif_state}"
+text="${net_icon}  ${audio_icon}  "
+tooltip="Volume: ${vol}%\n${net_state}"
 
 printf '{"text":"%s","tooltip":"%s"}\n' "$text" "$tooltip"
