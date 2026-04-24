@@ -5,44 +5,34 @@
 	"passthrough": false,
 	"reload_on_style_change": true,
 
-	"spacing": 8,
+	"spacing": 4,
 
 	"margin-top": 6,
 	"margin-left": 10,
 	"margin-right": 10,
 	"margin-bottom": 0,
 
-	"modules-left": ["custom/icon", "hyprland/window"],
-	"modules-center": ["hyprland/workspaces"],
+	"modules-left": ["custom/icon", "hyprland/workspaces"],
+	"modules-center": ["clock"],
 	"modules-right": [
 		"custom/spotify-prev",
 		"custom/spotify",
 		"custom/spotify-next",
-		"pulseaudio",
-		"network",
+		"temperature",
 		"cpu",
 		"memory",
+		"disk#home",
+		"disk#storage",
 		"tray",
-		"clock",
+		"custom/status",
 		"custom/power",
 	],
 
 	"custom/icon": {
 		"format": "󰣇",
-	},
+		"on-click": "hyprctl dispatch exec \"[workspace empty] kitty -e btop\"",
 
-	"hyprland/window": {
-		"separate-outputs": true,
-		"max-length": 40,
-		"format": "{class}",
-		"rewrite": {
-			"": "dracoN* arch",
-			"kitty": "dracoN* arch",
-			"vesktop": "Discord",
-			"zen": "Browser",
-			"firefox": "Firefox",
-			"spotify": "Spotify",
-		},
+		"tooltip": false,
 	},
 
 	"hyprland/workspaces": {
@@ -89,28 +79,84 @@
 		"tooltip": false,
 	},
 
+	"custom/status": {
+		"exec": "~/.config/waybar/scripts/status-indicator.sh",
+		"interval": 2,
+		"return-type": "json",
+		"format": "{}",
+		"on-click": "~/.config/waybar/scripts/status-menu.sh",
+		"on-click-middle": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+		"on-scroll-up": "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+",
+		"on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+		"tooltip": true
+	},
+
 	"pulseaudio": {
-		"format": "{icon}  {volume}%",
-		"format-muted": "󰝟  muted",
+		"format": "{icon}",
+		"format-muted": "󰝟 ",
 		"format-icons": {
 			"default": ["󰕿", "󰖀", "󰕾"],
 		},
+		"tooltip-format": "{volume}%",
 		"on-click": "pavucontrol",
 	},
 
 	"network": {
-		"format-wifi": "󰖩  {essid}",
-		"format-ethernet": "󰈀  ethernet",
-		"format-disconnected": "󰖪  offline",
-		"tooltip-format": "{ifname} via {gwaddr}",
+		"format-wifi": "󰖩",
+		"format-ethernet": "󰌗",
+		"format-disconnected": "󰖪",
+		"tooltip-format-wifi": "Wi-Fi Online: {essid}",
+		"tooltip-format-ethernet": "Ethernet Online",
+		"tooltip-format-disconnected": "Rede Offline",
 	},
 
 	"cpu": {
 		"format": "󰍛  {usage}%",
 	},
 
+	"temperature": {
+		"format": "  {temperatureC}°C",
+		"format-critical": "  {temperatureC}°C",
+		"critical-threshold": 80,
+	},
+
 	"memory": {
 		"format": "󰘚  {}%",
+	},
+
+	"disk#home": {
+		"interval": 30,
+		"path": "/home",
+		"format": "󰋊  {percentage_used}%",
+		"tooltip-format": "Home (/home): {used}/{total} ({percentage_used}%)"
+	},
+
+	"disk#storage": {
+		"interval": 30,
+		"path": "/media/storage",
+		"format": "  {percentage_used}%",
+		"tooltip-format": "Apple HDD (/media/storage): {used}/{total} ({percentage_used}%)"
+	},
+
+	"custom/notification": {
+		"tooltip": false,
+		"format": "{icon}",
+		"format-icons": {
+			"notification": "",
+			"none": "",
+			"dnd-notification": "",
+			"dnd-none": "",
+			"inhibited-notification": "",
+			"inhibited-none": "",
+			"dnd-inhibited-notification": "",
+			"dnd-inhibited-none": "",
+		},
+		"return-type": "json",
+		"exec-if": "which swaync-client",
+		"exec": "swaync-client -swb",
+		"on-click": "swaync-client -t -sw",
+		"on-click-right": "swaync-client -d -sw",
+		"escape": true,
 	},
 
 	"tray": {
@@ -120,8 +166,7 @@
 	},
 
 	"clock": {
-		"format": "󰥔  {:%H:%M}",
-		"format-alt": "󰃭  {:%d/%m/%Y}",
+		"format": "󰥔  {:%a %d • %H:%M}",
 		"interval": 1,
 		"tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
 		"calendar": {
@@ -129,7 +174,6 @@
 				"today": "<span color='#eed49f'><b>{}</b></span>",
 			},
 		},
-		"on-click": "~/.config/waybar/scripts/calendar-toggle.sh",
 		"on-click-middle": "mode",
 	},
 

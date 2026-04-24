@@ -4,11 +4,31 @@
 	min-height: 0;
 }
 
-window#waybar {
-	background: rgba(15, 17, 22, 0.92);
-	border: 1px solid rgba(255, 255, 255, 0.06);
-	border-radius: 14px;
+tooltip {
+	background: rgba(20, 20, 26, 0.5);
 	color: #e6e6e6;
+	border-radius: 6px;
+	padding: 1px 6px;
+	margin: 0;
+}
+
+tooltip * {
+	font-family: 'JetBrainsMono Nerd Font', monospace;
+	font-size: 13px;
+	min-height: 0;
+	padding: 0;
+	margin: 0;
+}
+
+tooltip box {
+	padding: 0;
+	margin: 0;
+}
+
+window#waybar {
+	background: transparent;
+	color: #e6e6e6;
+	min-height: 32px;
 }
 
 window#waybar .modules-left {
@@ -20,40 +40,44 @@ window#waybar .modules-right {
 }
 
 /* módulos padrão */
-#custom-icon,
-#pulseaudio,
-#network,
 #cpu,
+#temperature,
 #memory,
+#disk,
+#disk-root,
+#disk-home,
+#disk-storage,
 #clock,
 #tray {
-	background: rgba(255, 255, 255, 0.045);
-	border-radius: 12px;
-	padding: 0 6px;
-	margin: 2px 0;
+	background: rgba(20, 20, 26, 0.5);
+	border-radius: 6px;
+	padding: 0 10px;
+	margin: 4px 1px;
+	min-height: 28px;
 	color: #e6e6e6;
 }
 
-#hyprland-window {
-	background: rgba(255, 255, 255, 0.045);
-	border-radius: 12px;
-	padding: 0 14px;
-	margin: 4px 0;
-	color: #f2f2f2;
+#custom-icon {
+	padding: 0;
+	min-width: 28px;
+}
+
+#custom-icon label {
+	padding: 0;
+	margin: 0;
 }
 
 #hyprland-workspaces {
 	background: rgba(255, 255, 255, 0.03);
-	border-radius: 12px;
-	padding: 0 6px;
+	border-radius: 6px;
+	padding: 0 4px;
 	margin: 4px 0;
+	min-height: 28px;
 }
 
 #hyprland-workspaces button {
 	color: #a9b1bd;
-	padding: 0 8px;
-	border-radius: 10px;
-	margin: 4px 2px;
+	border-radius: 6px;
 }
 
 #hyprland-workspaces button.active {
@@ -77,10 +101,11 @@ window#waybar .modules-right {
 #custom-spotify-prev,
 #custom-spotify-next {
 	background: rgba(30, 215, 96, 0.12);
-	border-radius: 12px;
-	padding: 0 12px;
-	margin-right: 4px;
+	border-radius: 6px;
+	padding: 0 10px;
+	margin-right: 2px;
 	min-width: 16px;
+	min-height: 28px;
 }
 
 #custom-spotify {
@@ -89,9 +114,10 @@ window#waybar .modules-right {
 		rgba(30, 215, 96, 0.18),
 		rgba(30, 215, 96, 0.1)
 	);
-	border-radius: 12px;
-	padding: 0 16px;
-	margin-right: 4px;
+	border-radius: 6px;
+	padding: 0 12px;
+	margin-right: 2px;
+	min-height: 28px;
 	font-weight: 700;
 	transition: all 0.2s ease;
 }
@@ -117,6 +143,9 @@ window#waybar .modules-right {
 
 /* detalhes */
 #clock {
+	background: transparent;
+	padding: 0;
+	margin: 4px 2px;
 	font-weight: 700;
 }
 
@@ -127,15 +156,12 @@ window#waybar .modules-right {
 
 /* power */
 #custom-power {
-	background: rgba(255, 80, 80, 0.15);
 	color: #ff5555;
 
-	border-radius: 12px;
-	margin: 4px 2px;
+	padding: 0;
 
-	padding: 0 10px;
-
-	min-height: 24px; /* 👈 garante altura fixa */
+	min-width: 28px;
+	min-height: 24px;
 }
 
 #custom-power label {
@@ -144,5 +170,17 @@ window#waybar .modules-right {
 }
 
 #custom-power:hover {
-	background: rgba(255, 80, 80, 0.3);
+	color: #fb6e6e;
+}
+
+#custom-status {
+	border-radius: 6px;
+	margin: 4px 1px;
+	padding: 0 10px;
+	min-height: 28px;
+	color: #f1f1f1;
+}
+
+#custom-status:hover {
+	color: #e6e6e6;
 }

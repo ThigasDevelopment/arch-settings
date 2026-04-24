@@ -1,0 +1,95 @@
+* {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  color: #e6e6e6;
+}
+
+.control-center {
+  background: rgba(20, 20, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.control-center .widget-title,
+.control-center .widget-dnd,
+.control-center .widget-mpris,
+.control-center .widget-volume {
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 6px;
+  margin: 4px;
+  padding: 4px 8px;
+}
+
+.widget-title > button {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.widget-title > button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.widget-dnd > switch {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.widget-dnd > switch:checked {
+  background: rgba(30, 215, 96, 0.24);
+}
+
+.notification-row {
+  outline: none;
+}
+
+.notification {
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 4px;
+  padding: 6px 8px;
+}
+
+.notification.critical {
+  border: 1px solid rgba(255, 85, 85, 0.6);
+}
+
+.notification .summary {
+  font-weight: 700;
+}
+
+.notification .time,
+.notification .app-name,
+.notification .body {
+  color: #cfd3da;
+}
+
+.notification .close-button {
+  background: rgba(255, 85, 85, 0.16);
+  border-radius: 6px;
+  color: #ff5555;
+  border: none;
+}
+
+.notification .close-button:hover {
+  background: rgba(255, 85, 85, 0.28);
+}
+
+.notification-group-headers {
+  font-weight: 700;
+  margin: 4px 8px 1px 8px;
+}
+
+.floating-notifications .notification {
+  box-shadow: none;
+}
+
+.blank-window {
+  background: transparent;
+}
+
+.inhibitor-active {
+  color: #1ed760;
+}

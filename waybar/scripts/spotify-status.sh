@@ -3,7 +3,7 @@
 PLAYER="spotify"
 
 if ! playerctl -l 2>/dev/null | grep -qx "$PLAYER"; then
-  echo '{"text":"󰓇 offline","tooltip":"Spotify fechado","class":"offline"}'
+  echo '{"text":"󰓇 404 Not Found","tooltip":"Spotify fechado","class":"404 Not Found"}'
   exit 0
 fi
 
