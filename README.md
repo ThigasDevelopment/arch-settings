@@ -7,6 +7,7 @@ Setup pessoal para Wayland com foco em produtividade no dia a dia.
 - `hypr/`: Hyprland (`hyprland.conf`, `hyprpaper.conf`, scripts)
 - `waybar/`: barra, tema e scripts (`power-menu`, `status`, `spotify`)
 - `kitty/`, `wofi/`, `swaync/`: terminal, launcher e notificacoes
+- `wofi/scripts/spotlight.sh`: modo Spotlight (calculadora + busca web)
 - `zsh/.zshrc` e `.profile`: shell/env vars
 - `gtk-3.0/`, `fontconfig/`, `cursor-clip/`: tema/fontes/clipboard daemon
 - `pavucontrol.ini`: preferencias do mixer de audio
@@ -20,6 +21,8 @@ Pacotes/comandos usados diretamente nesta configuracao:
 - `spotify-launcher`, `playerctl`
 - `wpctl` (PipeWire), `nmcli` (NetworkManager), `pavucontrol`
 - `grim`, `slurp`, `wl-copy` (`wl-clipboard`)
+- `python3`, `libnotify` (`notify-send`)
+- `chromium`, `firefox`
 - `jq`, `stow`
 
 ## Instalacao automatica (bootstrap)
@@ -60,6 +63,7 @@ Garantir scripts executaveis:
 ```bash
 chmod +x ~/.config/hypr/scripts/ws-smart.sh
 chmod +x ~/.config/waybar/scripts/*.sh
+chmod +x ~/.config/wofi/scripts/spotlight.sh
 ```
 
 ## Comandos uteis
@@ -85,7 +89,7 @@ pkill waybar && waybar
 - `SUPER + W`: fechar janela ativa
 - `SUPER + E`: abrir gerenciador de arquivos (`nautilus`)
 - `SUPER + F`: alternar janela flutuante
-- `SUPER + R`: abrir/fechar launcher (`wofi --show drun`)
+- `SUPER + R`: abrir/fechar launcher de apps (drun)
 - `SUPER + C`: pseudo tile (dwindle)
 - `SUPER + J`: toggle split (dwindle)
 - `SUPER + B`: abrir navegador (`firefox`)
@@ -93,9 +97,20 @@ pkill waybar && waybar
 - `SUPER + Y`: abrir VS Code (`code`)
 - `SUPER + P`: abrir menu de energia (`~/.config/waybar/scripts/power-menu.sh`)
 - `SUPER + O`: abrir `opencode` no terminal
+- `SUPER + Return`: abrir Spotlight (`~/.config/wofi/scripts/spotlight.sh`)
 - `SUPER + Escape`: abrir `hyprshutdown` (fallback para `hyprctl dispatch exit`)
 - `SUPER + SHIFT + S`: screenshot de selecao e copiar para clipboard (`grim + slurp + wl-copy`)
+- `SUPER + SHIFT + B`: abrir QMK configurator no Chromium em modo app
 - `SUPER + SHIFT + Escape`: abrir `btop` no terminal
+
+#### Spotlight (`wofi/scripts/spotlight.sh`)
+
+Fluxo do script:
+
+- Mostra um prompt tipo Spotlight usando `wofi --dmenu`.
+- Se a entrada for uma expressao matematica valida, calcula o resultado com Python (AST seguro), notifica e copia para o clipboard (`wl-copy`, se disponivel).
+- Se a entrada comecar com `http://` ou `https://`, abre diretamente no Firefox.
+- Para qualquer outro texto, faz busca no Google em nova aba do Firefox.
 
 #### Foco e navegacao
 
@@ -206,6 +221,8 @@ Observacao:
 - Wallpaper: `hypr/hyprpaper.conf`
 - Modulos da barra: `waybar/config.jsonc`
 - Tema da barra: `waybar/style.css`
+- Launcher (layout, prompt, matching): `wofi/config`
+- Launcher (tema/cores): `wofi/style.css`
 
 ## Problemas comuns
 
