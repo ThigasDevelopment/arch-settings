@@ -37,7 +37,7 @@ O script instala:
 
 - Pacotes oficiais via `pacman`
 - `yay` via `git clone` + `makepkg`
-- AUR (`cursor-clip-git`, `tela-icon-theme`, `visual-studio-code-bin`)
+- AUR (`cursor-clip-git`, `teams-for-linux-bin`, `tela-icon-theme`, `visual-studio-code-bin`)
 - `nvm`, Node LTS e `opencode-ai` global via npm do nvm
 - Links/configs com `stow`
 

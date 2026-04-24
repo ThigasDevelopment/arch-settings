@@ -4,7 +4,7 @@ set -euo pipefail
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
 
 REPO_PKGS=(
-  adw-gtk-theme base base-devel breeze-icons btop discord efibootmgr eog fastfetch firefox
+  adw-gtk-theme base base-devel breeze-icons btop chromium discord efibootmgr eog fastfetch firefox
   fzf git grim grub gsimplecal gst-plugin-pipewire gtk4-layer-shell hyprland hyprpaper intel-ucode jq
   kitty kvantum libpulse linux linux-firmware linux-headers lxappearance nano nautilus noto-fonts
   noto-fonts-emoji nvidia-open-dkms nvidia-settings nvidia-utils pavucontrol pipewire pipewire-alsa
@@ -15,7 +15,7 @@ REPO_PKGS=(
 )
 
 AUR_PKGS=(
-  cursor-clip-git tela-icon-theme visual-studio-code-bin
+  cursor-clip-git teams-for-linux-bin tela-icon-theme visual-studio-code-bin
 )
 
 echo "[1/6] Atualizando sistema"
