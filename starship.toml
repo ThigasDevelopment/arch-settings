@@ -1,0 +1,78 @@
+# mono — prompt sem cor. Hierarquia por peso e por símbolo.
+# Duas linhas: contexto em cima, cursor embaixo, sempre na mesma coluna.
+
+add_newline = true
+format = """
+$time$directory$git_branch$git_status$nodejs$python$cmd_duration
+$character"""
+
+[character]
+# Traço horizontal. A barra vertical foi testada antes e colidia com o
+# cursor do kitty — dois retângulos verticais iguais lado a lado, sem
+# dizer qual é qual. O traço é a mesma marca sólida do tema, girada 90°,
+# e por isso nunca se confunde com o cursor.
+#
+# Estado é luminância, não forma: o erro é o MESMO traço, mais escuro.
+success_symbol = "[—](bold white)"
+error_symbol   = "[—](bold #5a5a5a)"
+vimcmd_symbol  = "[—](bold #8a8a8a)"
+
+[directory]
+style              = "bold white"
+truncation_length  = 3
+truncate_to_repo   = true
+format             = "[$path]($style)[$read_only]($read_only_style) "
+read_only          = " ro"
+read_only_style    = "#3d3d3d"
+
+[git_branch]
+style  = "#8a8a8a"
+symbol = ""
+format = "[$branch]($style) "
+
+[git_status]
+style     = "#3d3d3d"
+format    = "[$all_status$ahead_behind]($style)"
+conflicted = "!"
+ahead      = "↑"
+behind     = "↓"
+diverged   = "↕"
+untracked  = "?"
+stashed    = "$"
+modified   = "*"
+staged     = "+"
+renamed    = "»"
+deleted    = "x"
+
+[nodejs]
+style  = "#3d3d3d"
+symbol = "node "
+format = "[$symbol$version]($style) "
+
+[python]
+style  = "#3d3d3d"
+symbol = "py "
+format = "[$symbol$version]($style) "
+
+# Horário à esquerda do diretório, em cinza baixo: prefixa a linha como
+# um carimbo de log, sem competir com o caminho.
+[time]
+disabled    = false
+style       = "#3d3d3d"
+time_format = "%H:%M"
+format      = "[$time]($style) "
+
+[cmd_duration]
+style        = "#3d3d3d"
+min_time     = 2000
+format       = "[$duration]($style)"
+
+# desligados: sem sopa de ícone e sem informação redundante
+[package]
+disabled = true
+
+[hostname]
+disabled = true
+
+[username]
+disabled = true

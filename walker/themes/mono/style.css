@@ -1,0 +1,186 @@
+/* mono — Walker 2.x
+   Seletores conferidos contra /etc/xdg/walker/themes/default/.
+   Sem cor: hierarquia por peso, densidade e uma barra branca de selecao. */
+
+@define-color window_bg_color #0b0b0b;
+@define-color accent_bg_color #ffffff;
+@define-color theme_fg_color  #c8c8c8;
+@define-color error_bg_color  #ffffff;
+@define-color error_fg_color  #000000;
+
+/* Texto em SF Pro; ícones caem na JetBrains Mono por fallback. */
+* {
+  all: unset;
+  font-family: "SF Pro Text", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+}
+
+scrollbar { opacity: 0; }
+
+.normal-icons { -gtk-icon-size: 16px; }
+.large-icons  { -gtk-icon-size: 20px; }
+
+/* ------------------------------------------------------------- moldura */
+
+.box-wrapper {
+  /* alpha: o blur da layerrule aparece por aqui */
+  background: rgba(11, 11, 11, 0.78);
+  border: 1px solid #262626;
+  border-radius: 6px;   /* mesmo raio das janelas do Hyprland */
+  padding: 0;
+  /* sem box-shadow: sobre preto puro sombra nao aparece, so suja */
+}
+
+.box { }
+
+/* --------------------------------------------------------------- campo */
+
+.search-container {
+  background: transparent;
+  border-bottom: 1px solid #262626;
+  border-radius: 0;
+}
+
+.input {
+  background: transparent;
+  color: #ffffff;
+  caret-color: #ffffff;
+  padding: 13px 16px;
+}
+
+.input placeholder {
+  color: #3d3d3d;
+  opacity: 1;
+}
+
+.input selection {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* --------------------------------------------------------------- lista */
+
+.content-container { padding: 6px 0; }
+
+.list { color: @theme_fg_color; background: transparent; }
+
+.placeholder,
+.elephant-hint {
+  color: #3d3d3d;
+  font-size: 12px;
+}
+
+.item-box {
+  padding: 8px 14px;
+  margin: 0 6px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+}
+
+/* a barra branca a esquerda e o unico marcador de selecao —
+   sem cor, e ela que carrega o foco */
+child:selected .item-box,
+row:selected .item-box {
+  background: #141414;
+  border-left: 2px solid #ffffff;
+}
+
+.item-text     { color: #c8c8c8; }
+.item-subtext  { color: #5a5a5a; font-size: 11px; opacity: 1; }
+
+child:selected .item-text    { color: #ffffff; font-weight: 600; }
+child:selected .item-subtext { color: #8a8a8a; }
+
+/* Badge de ativação rápida (ctrl 1, ctrl 2...) desenhado como tecla física:
+   fundo levemente elevado, borda de 1px e um filete mais claro embaixo, que
+   é o que dá a leitura de relevo. O TEXTO em si vem cru do Walker — ele
+   imprime a string do bind e não passa pelo formatador de símbolos que as
+   dicas de rodapé usam, então não há como trocar "ctrl 1" por "⌃1" pelo tema. */
+.item-quick-activation {
+  background: #1a1a1a;
+  color: #6e6e6e;
+  border: 1px solid #2e2e2e;
+  border-bottom: 2px solid #2e2e2e;
+  border-radius: 4px;
+  padding: 1px 7px 2px 7px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+child:selected .item-quick-activation {
+  color: #c8c8c8;
+  border-color: #3d3d3d;
+  border-bottom-color: #3d3d3d;
+}
+
+.item-image-text { font-size: 24px; color: #c8c8c8; }
+
+.calc .item-text    { font-size: 22px; color: #ffffff; }
+.symbols .item-image { font-size: 22px; }
+
+.providerlist .item-subtext { font-size: 11px; opacity: 1; }
+
+/* ------------------------------------------------------------ preview */
+
+/* O painel de preview (imagem do clipboard, conteúdo de arquivo) vinha com
+   fundo claro do GTK e destoava. Mesma superfície do resto. */
+.preview {
+  background: #0b0b0b;
+  border: 1px solid #262626;
+  border-radius: 4px;
+  color: @theme_fg_color;
+  padding: 6px;
+}
+
+.preview image,
+.preview picture {
+  background: #0b0b0b;
+}
+
+.preview-box,
+.preview-content {
+  background: #0b0b0b;
+  color: @theme_fg_color;
+}
+
+.preview .large-icons { -gtk-icon-size: 56px; }
+
+/* ------------------------------------------------------------ keybinds */
+
+.keybinds {
+  padding: 8px 14px;
+  border-top: 1px solid #262626;
+  font-size: 11px;
+  color: #3d3d3d;
+}
+
+.keybind-button       { opacity: 1; color: #3d3d3d; }
+.keybind-button:hover { color: #8a8a8a; }
+.keybind-bind         { text-transform: lowercase; color: #2e2e2e; }
+
+.keybind-label {
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #2e2e2e;
+  color: #5a5a5a;
+}
+
+/* -------------------------------------------------------------- estado */
+
+.todo.done .item-text-box { opacity: 0.3; }
+.todo.active              { font-weight: 700; }
+.bluetooth.disconnected   { opacity: 0.4; }
+:not(.calc).current       { font-style: italic; }
+
+.error {
+  padding: 10px 14px;
+  background: @error_bg_color;
+  color: @error_fg_color;
+}
+
+popover {
+  background: #141414;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 6px;
+}

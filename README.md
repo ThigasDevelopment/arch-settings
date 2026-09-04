@@ -1,252 +1,409 @@
-# Dotfiles (Hyprland)
+# linux — dotfiles mono
 
-Setup pessoal para Wayland com foco em produtividade no dia a dia.
+Hyprland em preto e branco. Sem cor em lugar nenhum: a hierarquia é feita por
+peso, densidade e uma única barra branca de foco.
 
-## O que este repo configura
+## O que veio do repo `arch-settings`
 
-- `hypr/`: Hyprland (`hyprland.conf`, `hyprpaper.conf`, scripts)
-- `waybar/`: barra, tema e scripts (`power-menu`, `status`, `spotify`)
-- `kitty/`, `wofi/`, `swaync/`: terminal, launcher e notificacoes
-- `wofi/scripts/spotlight.sh`: modo Spotlight (calculadora + busca web)
-- `zsh/.zshrc` e `.profile`: shell/env vars
-- `gtk-3.0/`, `fontconfig/`, `cursor-clip/`: tema/fontes/clipboard daemon
-- `pavucontrol.ini`: preferencias do mixer de audio
+Só isto, e nada mais:
 
-## Dependencias principais
+| Arquivo | Como veio |
+|---|---|
+| `hypr/hyprland.conf` → **bloco de keybindings** | literal, 61 binds |
+| `kitty/kitty.conf` | intacto (só o `current-theme.conf` foi trocado) |
+| `zsh/.zshrc` | intacto |
+| `fontconfig/fonts.conf` | intacto |
 
-Pacotes/comandos usados diretamente nesta configuracao:
+Todo o resto do `hyprland.conf` — monitor, autostart, input, window rules,
+layout, look and feel — foi escrito do zero. Não vieram de lá: `monitor
+HDMI-A-1`, `device PRO X 2`, `gesture`, bloco `master`, os window rules de
+XWayland/cursor-clip/hyprland-run, nem os `exec-once` de discord, spotify,
+cursor-clip e fastfetch. O `hyprpaper.conf` foi reescrito do zero.
 
-- `hyprland`, `hyprpaper`, `waybar`, `swaync`
-- `kitty`, `nautilus`, `wofi`
-- `spotify-launcher`, `playerctl`
-- `wpctl` (PipeWire), `nmcli` (NetworkManager), `pavucontrol`
-- `grim`, `slurp`, `wl-copy` (`wl-clipboard`)
-- `python3`, `libnotify` (`notify-send`)
-- `chromium`, `firefox`
-- `jq`, `stow`
+### Binds alterados
 
-## Instalacao automatica (bootstrap)
+Nenhuma tecla mudou de função sem pedido. As alterações:
 
-Use o script `bootstrap.sh` para instalar pacotes, AUR, nvm/Node e aplicar os dotfiles.
+- `SUPER + Space` → **novo**, abre o launcher único
+- `SUPER + R` e `SUPER + Return` → removidos (eram launcher e spotlight
+  separados, agora é um só)
+- `SUPER + P` → mesmo power menu, movido para `hypr/scripts/`
+- `SUPER + [0-9]` → `dispatch workspace` direto (`ws-smart.sh` removido a pedido)
 
-No diretorio `~/dotfiles`:
+Alguns binds herdados apontam para apps que o `install.sh` **não** instala
+(`discord`, `code`, `chromium`, `spotify-launcher`, `cursor-clip`, `opencode`).
+Instale por conta se usar; se não, o bind só não faz nada.
 
-```bash
-chmod +x bootstrap.sh
-./bootstrap.sh
+## O que mudou de ferramenta
+
+| Antes | Agora | Por quê |
+|---|---|---|
+| waybar + swaync | **AGS / Astal** | barra e notificações num codebase só, GTK, programável em TS |
+| wofi + `spotlight.sh` | **Walker 2.x** | apps, arquivos, Google e cálculo numa caixa só; sumiu o Python |
+| Catppuccin no kitty | **mono** | rampa de 16 cinzas com luminância separada |
+| Tela-black-dark | **Papirus-Dark**, pastas em cinza | pasta preta some no fundo `#0b0b0b` |
+| hyprpaper (config dele) | hyprpaper + wallpaper próprio | `hyprpaper.conf` reescrito; o dele apontava para `/home/dev/wallpapers` |
+| `stow` | symlink por diretório | ver "stow achata" abaixo |
+| pavucontrol | **pwvucontrol** | mixer nativo do PipeWire (GTK4 + libadwaita) |
+
+## A paleta inteira
+
+```
+#000000  chão absoluto (a barra)      #3d3d3d  rótulo, desabilitado
+#0b0b0b  superfície de janela         #8a8a8a  texto secundário
+#141414  superfície elevada, hover    #c8c8c8  texto
+#262626  borda                        #ffffff  primário, foco
 ```
 
-O script instala:
+Todos os hex dos arquivos de tema têm R=G=B. Zero cor.
 
-- Pacotes oficiais via `pacman`
-- `yay` via `git clone` + `makepkg`
-- AUR (`cursor-clip-git`, `teams-for-linux-bin`, `tela-icon-theme`, `visual-studio-code-bin`)
-- `nvm`, Node LTS e `opencode-ai` global via npm do nvm
-- Links/configs com `stow`
+## Rounding e animação
 
-## Instalar com GNU Stow (recomendado)
+`rounding = 6` com `rounding_power = 2.5` — o canto vira um squircle em vez de
+um arco de círculo. É de propósito quase imperceptível.
 
-No diretorio `~/dotfiles`:
+As animações usam **uma curva só** (`0.16, 1, 0.30, 1`), e duas decisões
+carregam a experiência:
 
-```bash
-mkdir -p ~/.config
+- **`popin 96%`**, não os 87% do default. 87% é um salto que se *vê*;
+  96% é um assentamento que se *sente*.
+- **A borda anima mais devagar que a janela** (6 contra 4). Sem cor, a borda
+  branca é o único sinal de foco — desenhá-la devagar torna a mudança de foco
+  legível em vez de um corte seco.
 
-stow --target="$HOME/.config" hypr waybar kitty wofi swaync gtk-3.0 fontconfig cursor-clip
-stow --target="$HOME" zsh
+## Como os quatro toolkits ficam iguais
 
-ln -sf ~/dotfiles/.profile ~/.profile
-ln -sf ~/dotfiles/pavucontrol.ini ~/.config/pavucontrol.ini
+Não dá para forçar um app a usar outro toolkit — GTK, Qt e Electron são
+compilados dentro do binário. O que dá é igualar a **aparência**:
+
+- **GTK4 / libadwaita** → `gtk-4.0/gtk.css`. libadwaita ignora
+  `gtk-theme-name` por completo; redefinir as cores nomeadas é o único ponto
+  de entrada. É isto que conserta o Nautilus.
+- **GTK3** → `adw-gtk3-dark` + `gtk-3.0/gtk.css` com as mesmas cores.
+- **Qt5 / Qt6** → `Fusion` + paleta manual de 21 roles em `colors/mono.conf`.
+- **Electron** → ignoram tudo acima; precisam de tema próprio por app.
+
+O **seletor de arquivos** de todos eles vira o mesmo diálogo GTK, via
+`xdg-desktop-portal/hyprland-portals.conf`.
+
+### Sobre barra de título
+
+`hyprbars` foi descartado: ele não substitui a headerbar do app, **empilha**
+uma segunda por cima — em app libadwaita dá barra dupla. Em vez disso, quem
+tem headerbar própria usa a dela, tematizada; quem não tem fica sem barra
+(`QT_WAYLAND_DISABLE_WINDOWDECORATION=1`). Em tiling, título é espaço morto.
+
+## Armadilhas encontradas testando numa VM
+
+Tudo abaixo quebrou de verdade e está corrigido:
+
+**`stow` achata os diretórios.** `stow --target=~/.config hypr` **não** cria
+`~/.config/hypr/hyprland.conf`; joga o conteúdo de `hypr/` direto em
+`~/.config/`. Com `gtk-3.0` e `gtk-4.0` juntos, os dois disputam
+`~/.config/gtk.css` e o stow aborta tudo. Por isso o `install.sh` usa
+`ln -sfn` por diretório.
+
+**CRLF mata o zsh.** Clonar o repo no Windows converte LF→CRLF, e aí todo
+`source` do `.zshrc` falha com `command not found: ^M`. O `.gitattributes`
+com `* text eol=lf` impede a recaída.
+
+**`chsh` para zsh quebra o autostart.** O Hyprland precisa subir pelo
+`.zprofile`, não pelo `.bash_profile` — zsh ignora o segundo por completo.
+
+**Opções mortas do Hyprland 0.56.** `dwindle:pseudotile` e `misc:vfr` não
+existem mais e derrubam o parse. `windowrule` usa formato de bloco.
+
+**`elephant` é só o binário.** Cada provider do Walker 2.x é um pacote AUR
+separado (`elephant-desktopapplications-bin` etc.). Sem eles o launcher abre
+e não retorna nada. E o `elephant` não tem unit do systemd — sobe no
+`exec-once`.
+
+**`providers.sets` do Walker é um par.** O formato é
+`nome = [[providers], [providers_quando_vazio]]`, não uma lista simples.
+
+## A barra (AGS)
+
+```
+ 󰣇  1 2 3 4 5              [mídia]              [tray] │ 󰍛 1% 󰘚 26% 󰋊 26% 󰌗 󰕾 40% │ 󰥔 03/09 · 16:25  ⏻
 ```
 
-Garantir scripts executaveis:
+Só ícone e número — nenhum rótulo por extenso. Cada item tem **tooltip** no
+hover com o que o número não diz: modelo da CPU, GiB absolutos, tamanho real
+do disco, nome do dispositivo de áudio, uptime da máquina, janelas por área.
 
-```bash
-chmod +x ~/.config/hypr/scripts/ws-smart.sh
-chmod +x ~/.config/waybar/scripts/*.sh
-chmod +x ~/.config/wofi/scripts/spotlight.sh
+A ordem da direita vai do mais volátil para o mais estável: **tray → leituras
+de sistema → relógio → energia**. O tray fica na ponta esquerda do grupo de
+propósito — é o único cujo conteúdo é imprevisível, e na borda ele empurraria
+o relógio de lugar toda vez que um app abrisse.
+
+As workspaces são uma **régua fixa de 1 a 5**, sempre visíveis. Iterar sobre
+`hypr.workspaces` só lista as que existem, e a barra ia crescendo conforme
+você abria janelas — posição instável para o olho.
+
+
+### Título da janela
+
+O centro alterna: **mídia quando há player, título da janela quando não há**.
+Os dois respondem à mesma pergunta e nunca precisam aparecer juntos.
+
+O título existe aí porque não existe em mais lugar nenhum — descartamos o
+`hyprbars` e os apps Qt rodam sem decoração própria, então kitty e afins não
+têm barra de título. Vai em `#8a8a8a`, não branco: o branco deste tema
+pertence ao marcador de foco e ao relógio.
+
+Usa `<With>` e não `createBinding` simples porque a ligação é aninhada —
+primeiro muda a janela em foco, depois muda o título *dentro* dela (abas do
+kitty, navegação no Nautilus).
+
+### Controle de volume
+
+Clicar no ícone de volume abre um popover com `Gtk.Scale` arrastável, botão
+de mudo e atalho para o mixer completo.
+
+Isto **não cabe no Walker**: ele é um renderizador de lista e não tem
+primitiva de slider — o provider `wireplumber` do elephant só oferece
+"subir/descer volume" como itens com atalho de teclado. No AGS o popover
+ainda ancora exatamente sob o ícone.
+
+A ligação é nos dois sentidos, com guarda contra laço: arrastar muda o
+sistema, e mudar por fora (tecla de mídia, `pwvucontrol`) move o slider.
+
+## Fontes
+
+| Onde | Fonte |
+|---|---|
+| Interface do sistema — GTK3, GTK4, Qt5, Qt6, Nautilus | **SF Pro Text 11** |
+| Terminal (kitty) | **JetBrainsMono Nerd Font Mono** |
+| Barra, Walker, `monospace` | SF Pro Text com fallback para JetBrains Mono |
+
+**SF Pro Text, não "SF Pro".** A Apple desenha a variante `Text` para
+tamanhos de interface (abaixo de ~20pt) e a `Display` para títulos. A 11pt é
+a `Text` que tem o espacejamento certo.
+
+**Como os ícones continuam funcionando.** A barra e o Walker pedem
+`"SF Pro Text", "JetBrainsMono Nerd Font"`. SF Pro não tem os codepoints da
+Private Use Area onde vivem os glifos Nerd Font, então esses caracteres caem
+sozinhos na JetBrains Mono. Uma cadeia só, sem trocar de família por widget.
+
+### A armadilha do `binding` no fontconfig
+
+O bloco de fallback global em `fontconfig/fonts.conf` usa
+`binding="weak"` — e isso **não é detalhe**:
+
+```xml
+<match target="pattern">
+  <edit name="family" mode="append" binding="weak">
+    <string>JetBrainsMono Nerd Font</string>
+  </edit>
+</match>
 ```
 
-## Comandos uteis
+Com `binding="strong"` a família anexada **vence** a que o app pediu, e todo
+`sans-serif` do sistema vira monoespaçado. Aconteceu no primeiro teste:
+`fc-match sans-serif` devolvia `JetBrainsMono Nerd Font`. Com `weak` ela vai
+para o fim da cadeia e serve só de fallback.
+
+Conferir com:
 
 ```bash
-# Recarregar Hyprland
+fc-match sans-serif    # SF Pro Text
+fc-match monospace     # JetBrainsMono Nerd Font
+fc-match --format='%{family}\n' :charset=f08c7   # glifo do Arch -> Nerd Font
+```
+
+### Licença
+
+`otf-apple-sf-pro` é AUR e o PKGBUILD baixa direto dos servidores da Apple —
+a fonte é proprietária e não redistribuível. Se preferir licença aberta com
+desenho próximo, `inter-font` está no repo oficial; trocar exige ajustar
+quatro pontos: `gtk-3.0/settings.ini`, `gtk-4.0/settings.ini`, os dois
+`qt*ct.conf` e o `fontconfig/fonts.conf`.
+
+## Wallpaper e blur
+
+Wallpaper: a marca do Arch em `#d0d3d4` centralizada sobre `#27292c`, em
+1920×1080.
+
+Gerada a partir do **logo vetorial oficial** do archlinux.org, renderizado a
+4000px e depois reduzido. A primeira versão partia de um PNG de 596×335 e
+esticava — as bordas do logo saíam moles. Vetor não tem esse problema: dá
+para regenerar em qualquer resolução com o mesmo comando.
+
+O blur é **leve** (`size 4`, `passes 2`) e as janelas continuam **opacas**
+(`opacity 1.0` no Hyprland). Baixar a opacidade da janela inteira lavaria o
+texto junto.
+
+Quem carrega a translucidez é **cada app, no próprio fundo**:
+
+- kitty → `background_opacity 0.85`
+- Nautilus e apps GTK → alpha nas superfícies base do `gtk-3.0/gtk.css` e
+  `gtk-4.0/gtk.css`
+- barra e Walker → `rgba()` nos seus CSS
+
+Assim o fundo deixa o blur passar e o texto continua opaco. Firefox e
+Electron pintam o próprio fundo e ignoram o CSS do GTK — esses não borram.
+
+`vibrancy = 0` porque ela reintroduz saturação de cor, que é exatamente o que
+este tema não quer.
+
+## Secure Boot
+
+`scripts/secure-boot.sh` deixa tudo pronto via `sbctl`. Não roda no
+`install.sh` porque exige dois passos na BIOS.
+
+O ponto que costuma quebrar dual boot: é **obrigatório** enrolar também os
+certificados da Microsoft (`--microsoft`). Sem eles o Windows Boot Manager não
+valida e a option ROM da 1660 SUPER pode não inicializar.
+
+O kernel do Arch traz `CONFIG_LOCK_DOWN_KERNEL_FORCE_NONE=y` e não define
+`CONFIG_MODULE_SIG_FORCE` — não exige módulo assinado nem ativa lockdown sob
+Secure Boot. Por isso o **NVIDIA DKMS continua carregando**, diferente do
+Ubuntu/Fedora.
+
+## Se algo não subir
+
+Tudo abaixo aconteceu numa instalação real e o erro **não diz** qual é a causa.
+
+### Hyprland fecha sozinho logo depois do logo
+
+```
+MESA: error: ZINK: vkCreateInstance failed (VK_ERROR_INCOMPATIBLE_DRIVER)
+MESA-EGL: warning: egl: failed to create dri2 screen
+Hyprland exit cleanly
+```
+
+**Falta driver de vídeo.** O Mesa não achou driver nativo, caiu no Zink
+(OpenGL sobre Vulkan), e Vulkan também não tinha driver. Sem EGL o compositor
+não renderiza.
+
+O `install.sh` **detecta a GPU e instala o driver certo** — NVIDIA, AMD ou
+Intel — no passo `[3/7]`. Se você chegou nesse erro, ou pulou com
+`SKIP_GPU=1`, ou é uma GPU que ele não reconheceu.
+
+Detalhes de como ele decide:
+
+- **Filtra por classe PCI `0x03xxxx`** (display controller), não pelo vendor
+  de todos os dispositivos. Quase toda placa-mãe tem chipset Intel ou AMD em
+  ponte, áudio e USB — sem o filtro, o script instalaria driver de vídeo do
+  fabricante errado.
+- **NVIDIA:** `nvidia-dkms`, não `nvidia-open-dkms`. O open só cobre Turing
+  para cima; o proprietário cobre de Maxwell às atuais.
+- **Headers do kernel que você realmente usa.** `linux-headers` não serve
+  para `linux-lts`/`zen`/`hardened`, e sem eles o DKMS não compila.
+- **Early KMS:** em NVIDIA ele adiciona os módulos ao `mkinitcpio.conf`
+  (backup em `.bak`) e regenera o initramfs. Isso **exige reboot** — o script
+  avisa no final.
+- Máquina híbrida com duas GPUs recebe os dois conjuntos.
+
+Depois do reboot, em NVIDIA:
+
+```bash
+cat /sys/module/nvidia_drm/parameters/modeset   # tem que dar Y
+```
+
+### O kitty abre em bash, e o Hyprland não sobe sozinho no tty1
+
+O `$SHELL` é herdado no login. Se a sessão começou antes do
+`chsh -s /usr/bin/zsh`, tudo continua em bash — e o `.zprofile`, que é quem
+sobe o Hyprland no tty1, é ignorado (bash lê `.bash_profile`).
+
+```bash
+getent passwd $USER | cut -d: -f7   # o que está registrado
+echo $SHELL                         # o que a sessão herdou
+```
+
+Divergiu? **Logout completo** — fechar o terminal não basta.
+
+O `kitty.conf` já traz `shell /usr/bin/zsh` fixo justamente para o terminal
+não depender disso.
+
+### `sbctl status` diz "sbctl is not installed"
+
+Falso alarme. Isso **não** é sobre o pacote — é jargão do sbctl para "minhas
+chaves ainda não estão enroladas no firmware". A linha que importa é
+`Setup Mode`.
+
+### Secure Boot com Unified Kernel Image
+
+Se o `archinstall` montou o boot com UKI, o artefato bootável é um único
+`/boot/EFI/Linux/*.efi` — não existe `vmlinuz` separado para assinar. O
+`scripts/secure-boot.sh` usa `sbctl verify` para descobrir o que está sem
+assinatura, então cobre UKI, systemd-boot e GRUB igualmente.
+
+Uma lista fixa de caminhos passaria batido pelo UKI, terminaria "com sucesso",
+e você ligaria o Secure Boot numa máquina que não boota.
+
+**Ordem correta, sempre:** assinar primeiro, ligar o Secure Boot na BIOS
+depois. Na ASUS o toggle é `OS Type: Windows UEFI Mode`.
+
+### Um app não pega o blur
+
+O blur do Hyprland só atravessa o que é **translúcido**. App que pinta fundo
+opaco tapa o efeito.
+
+Os temas GTK3 e GTK4 daqui já colocam alpha nas superfícies base, então
+Nautilus e afins funcionam. Firefox e Electron pintam o próprio fundo e
+ignoram o CSS do GTK — esses não vão borrar sem hack por app.
+
+Note que só o **fundo** é translúcido: texto e ícones pintam por cima e
+continuam opacos. É o oposto de baixar a opacidade da janela inteira no
+Hyprland, que lavaria o texto junto.
+
+## Instalação
+
+```bash
+git clone <este-repo> ~/Documents/Projects/linux
+cd ~/Documents/Projects/linux
+./install.sh
+```
+
+O script instala **o que os dotfiles precisam**, incluindo o driver de vídeo
+(detectado automaticamente — NVIDIA, AMD ou Intel; pule com `SKIP_GPU=1`).
+Bootloader, kernel e microcode continuam sendo decisão do seu sistema —
+fora de escopo.
+
+**Rodando de um pendrive:** o script **recusa** rodar de fora do seu `$HOME`
+e manda copiar primeiro. Os links em `~/.config` apontam para o diretório
+do repo — se ele estiver em mídia removível, morrem no instante em que
+você desplugar e o Hyprland sobe sem config nenhuma.
+
+A recusa é de propósito, em vez de copiar sozinho: uma cópia silenciosa
+deixaria você editando o pendrive enquanto o sistema lê outro lugar.
+
+Depois, à mão:
+
+1. `chsh -s /usr/bin/zsh`
+2. Ajustar o monitor em `hypr/hyprland.conf` se quiser fixar resolução
+3. Firefox → `about:config` → `widget.use-xdg-desktop-portal.file-picker = true`
+
+## Verificar
+
+```bash
 hyprctl reload
-
-# Reiniciar Waybar
-pkill waybar && waybar
-
-# Testar script de status da Waybar
-~/.config/waybar/scripts/status-indicator.sh
+hyprctl configerrors      # tem que sair vazio
+ags quit; ags run
+walker                    # SUPER + Space
 ```
 
-## Binds completas
+## Versões-alvo
 
-### Hyprland (`hypr/hyprland.conf`)
+- **Hyprland 0.56.x** — sintaxe de `windowrule` em bloco
+- **Walker 2.17** — tema é um *diretório* com XML de GTK Builder + `style.css`
+- **AGS v2 / Astal**, bindings `astal/gtk3`
 
-#### Apps e acoes gerais
+## Estrutura
 
-- `SUPER + T`: abrir terminal (`kitty`)
-- `SUPER + W`: fechar janela ativa
-- `SUPER + E`: abrir gerenciador de arquivos (`nautilus`)
-- `SUPER + F`: alternar janela flutuante
-- `SUPER + R`: alternar launcher de apps (`wofi --show drun`, com `pkill` previo para fechar se ja estiver aberto)
-- `SUPER + C`: pseudo tile (dwindle)
-- `SUPER + J`: toggle split (dwindle)
-- `SUPER + B`: abrir navegador (`firefox`)
-- `SUPER + V`: abrir `cursor-clip`
-- `SUPER + Y`: abrir VS Code (`code`)
-- `SUPER + P`: abrir menu de energia (`.config/waybar/scripts/power-menu.sh`)
-- `SUPER + O`: abrir `opencode` no terminal
-- `SUPER + Return`: alternar Spotlight (`~/.config/wofi/scripts/spotlight.sh`, com `pkill` previo do `wofi`)
-- `SUPER + Escape`: abrir `hyprshutdown` (fallback para `hyprctl dispatch exit`)
-- `SUPER + SHIFT + S`: screenshot de selecao e copiar para clipboard (`grim + slurp + wl-copy`)
-- `SUPER + SHIFT + B`: abrir QMK configurator no Chromium em modo app (`https://qmk.top/`)
-- `SUPER + SHIFT + Escape`: abrir `btop` no terminal
-
-#### Spotlight (`wofi/scripts/spotlight.sh`)
-
-Fluxo do script:
-
-- Mostra um prompt tipo Spotlight usando `wofi --dmenu`.
-- Se a entrada for uma expressao matematica valida, calcula o resultado com Python (AST seguro), notifica e copia para o clipboard (`wl-copy`, se disponivel).
-- Se a entrada comecar com `http://` ou `https://`, abre diretamente no Firefox.
-- Para qualquer outro texto, faz busca no Google em nova aba do Firefox.
-
-#### Foco e navegacao
-
-- `SUPER + Left`: mover foco para esquerda
-- `SUPER + Right`: mover foco para direita
-- `SUPER + Up`: mover foco para cima
-- `SUPER + Down`: mover foco para baixo
-- `SUPER + Tab`: proximo workspace
-- `SUPER + SHIFT + Tab`: workspace anterior
-
-#### Workspaces diretos
-
-- `SUPER + 1`: ir para workspace 1 (`ws-smart.sh 1`)
-- `SUPER + 2`: ir para workspace 2 (`ws-smart.sh 2`)
-- `SUPER + 3`: ir para workspace 3 (`ws-smart.sh 3`)
-- `SUPER + 4`: ir para workspace 4 (`ws-smart.sh 4`)
-- `SUPER + 5`: ir para workspace 5 (`ws-smart.sh 5`)
-- `SUPER + 6`: ir para workspace 6 (`ws-smart.sh 6`)
-- `SUPER + 7`: ir para workspace 7 (`ws-smart.sh 7`)
-- `SUPER + 8`: ir para workspace 8 (`ws-smart.sh 8`)
-- `SUPER + 9`: ir para workspace 9 (`ws-smart.sh 9`)
-- `SUPER + 0`: ir para workspace 10 (`ws-smart.sh 10`)
-
-#### Como funciona o `ws-smart.sh`
-
-Arquivo: `hypr/scripts/ws-smart.sh`
-
-Objetivo:
-
-- Evitar trocar para workspace vazio ao usar `SUPER + [1..0]`.
-
-Fluxo:
-
-- Recebe o numero do workspace como argumento (`WS="$1"`).
-- Se nenhum argumento for informado, sai sem fazer nada.
-- Consulta os workspaces via `hyprctl workspaces -j`.
-- Usa `jq` para verificar se existe um workspace com:
-    - `id == WS`
-    - `windows > 0`
-- So nesse caso executa `hyprctl dispatch workspace "WS"`.
-
-Comportamento pratico nas binds numericas:
-
-- Se o workspace de destino tiver ao menos uma janela, voce muda para ele.
-- Se estiver vazio (ou nao existir ainda), nada acontece.
-
-Exemplo rapido:
-
-- `SUPER + 3`:
-    - Workspace 3 com janelas: troca para o 3.
-    - Workspace 3 vazio: permanece no workspace atual.
-
-Observacao:
-
-- As binds `SUPER + SHIFT + [1..0]` continuam movendo a janela para o workspace de destino normalmente, independente de ele estar vazio.
-
-#### Mover janela para workspace
-
-- `SUPER + SHIFT + 1`: mover janela ativa para workspace 1
-- `SUPER + SHIFT + 2`: mover janela ativa para workspace 2
-- `SUPER + SHIFT + 3`: mover janela ativa para workspace 3
-- `SUPER + SHIFT + 4`: mover janela ativa para workspace 4
-- `SUPER + SHIFT + 5`: mover janela ativa para workspace 5
-- `SUPER + SHIFT + 6`: mover janela ativa para workspace 6
-- `SUPER + SHIFT + 7`: mover janela ativa para workspace 7
-- `SUPER + SHIFT + 8`: mover janela ativa para workspace 8
-- `SUPER + SHIFT + 9`: mover janela ativa para workspace 9
-- `SUPER + SHIFT + 0`: mover janela ativa para workspace 10
-
-#### Workspace especial (scratch)
-
-- `SUPER + M`: alternar workspace especial `magic`
-- `SUPER + SHIFT + M`: mover janela ativa para workspace especial `magic`
-
-#### Mouse
-
-- `SUPER + scroll down`: proximo workspace (`e+1`)
-- `SUPER + scroll up`: workspace anterior (`e-1`)
-- `SUPER + mouse left drag`: mover janela (`movewindow`)
-- `SUPER + mouse right drag`: redimensionar janela (`resizewindow`)
-
-#### Teclas multimidia e brilho
-
-- `XF86AudioRaiseVolume`: aumentar volume em 5%
-- `XF86AudioLowerVolume`: diminuir volume em 5%
-- `XF86AudioMute`: mute/unmute saida de audio
-- `XF86AudioMicMute`: mute/unmute microfone
-- `XF86MonBrightnessUp`: aumentar brilho em 5%
-- `XF86MonBrightnessDown`: diminuir brilho em 5%
-- `XF86AudioNext`: proxima faixa (`playerctl next`)
-- `XF86AudioPause`: play/pause (`playerctl play-pause`)
-- `XF86AudioPlay`: play/pause (`playerctl play-pause`)
-- `XF86AudioPrev`: faixa anterior (`playerctl previous`)
-
-### Zsh (`zsh/.zshrc`)
-
-- `Home` (`^[[H`): ir para inicio da linha
-- `End` (`^[[F`): ir para fim da linha
-- `Delete` (`^[[3~`): apagar caractere sob cursor
-- `Backspace` (`^H`): apagar palavra anterior
-- `Ctrl + Delete` (`^[[3;5~`): apagar proxima palavra
-- `Ctrl + Right` (`^[[1;5C`): avancar uma palavra
-- `Ctrl + Left` (`^[[1;5D`): voltar uma palavra
-
-## Pontos para personalizar rapido
-
-- Monitor, autostart, keybinds: `hypr/hyprland.conf`
-- Wallpaper: `hypr/hyprpaper.conf`
-- Modulos da barra: `waybar/config.jsonc`
-- Tema da barra: `waybar/style.css`
-- Launcher (layout, prompt, matching): `wofi/config`
-- Launcher (tema/cores): `wofi/style.css`
-
-## Problemas comuns
-
-- `disk#storage` mostra erro: ajuste `"path": "/media/storage"` em `waybar/config.jsonc`.
-- Sem rede/volume no status: verifique `nmcli` e `wpctl` instalados.
-- Spotify sempre offline: confirme player MPRIS ativo (`playerctl -p spotify status`).
-
-## Screenshots (opcional, recomendado)
-
-Voce pode gerar prints e adicionar aqui para documentar o visual.
-
-Exemplo de captura:
-
-```bash
-mkdir -p ~/dotfiles/assets
-grim ~/dotfiles/assets/desktop-full.png
-grim -g "$(slurp)" ~/dotfiles/assets/waybar-detail.png
 ```
-
-Depois referencie no README:
-
-```md
-## Preview
-
-![Desktop](assets/desktop-full.png)
-![Waybar](assets/waybar-detail.png)
+hypr/          hyprland.conf, hyprpaper.conf, wallpapers/, scripts/power-menu.sh
+ags/           app.ts, style.css, widget/Bar.tsx, widget/Notifications.tsx
+walker/        config.toml, themes/mono/ (launcher), themes/power/ (menu de energia)
+elephant/      files.toml — onde o launcher procura arquivos
+kitty/         kitty.conf (intacto), current-theme.conf (mono)
+gtk-3.0/       settings.ini, gtk.css
+gtk-4.0/       settings.ini, gtk.css      ← o que conserta o Nautilus
+qt5ct/ qt6ct/  Fusion + paleta de 21 roles
+xdg-desktop-portal/   seletor de arquivos unificado
+zsh/           .zshrc (intacto), .zprofile (sobe o Hyprland no tty1)
+scripts/       secure-boot.sh (sbctl, rodar à mão)
+starship.toml  prompt sem cor
 ```

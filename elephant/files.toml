@@ -1,0 +1,41 @@
+# Provider "files" do Walker — onde ele procura arquivos.
+#
+# Por padrão o elephant indexa APENAS $HOME. Um arquivo no HDD montado em
+# /media/storage não aparece no launcher. Liste aqui todas as raízes que
+# você quer alcançar pelo SUPER+Space.
+#
+# Requer `fd` instalado (dependência do elephant-files).
+
+search_dirs = [
+  # O install.sh reescreve esta linha com o seu $HOME real. TOML não expande
+  # variável, e se o usuário do archinstall não for "dev" a busca de arquivos
+  # apontaria para um diretório inexistente.
+  "/home/dev",
+  # Segundo disco — descomente quando montar o HDD.
+  # O elephant varre o que estiver listado aqui; apontar para um
+  # ponto de montagem inexistente só gera trabalho à toa no índice.
+  # "/media/storage",
+]
+
+# ATENÇÃO: aspas SIMPLES. Em TOML, aspas duplas processam escapes, e um
+# regex como "/\.cache/" quebra o parse com
+#   toml: invalid escaped character U+002E '.'
+# String literal (aspas simples) passa o regex intacto.
+#
+# Sem estes filtros o índice enche de lixo: no teste deu 9.095 caminhos,
+# a maioria cache do Go, empurrando os arquivos reais para fora dos
+# primeiros resultados.
+ignored_dirs = [
+  '/\.cache/',
+  '/\.git/',
+  '/node_modules/',
+  '/go/pkg/mod/',
+  '/\.local/share/Trash/',
+  '/\.npm/',
+  '/\.cargo/registry/',
+  '/target/(debug|release)/',
+]
+
+# Reindexa quando algo muda, em vez de só no boot do daemon.
+watch = true
+watch_buffer = 2000

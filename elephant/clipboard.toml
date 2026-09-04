@@ -1,0 +1,29 @@
+# Histórico de Ctrl+C do Walker — texto, caminhos e imagens.
+#
+# Aberto com SUPER+V. O provider guarda o conteúdo real (não só o texto):
+# imagens aparecem com miniatura, e o item_clipboard.xml do tema mono é quem
+# desenha essa miniatura.
+#
+# Requer `wl-clipboard` e `imagemagick` — ambos no install.sh. Sem o
+# imagemagick as imagens simplesmente não entram no histórico.
+
+# 100 é o default. 200 cobre bem uma semana de trabalho sem inchar o banco.
+max_items = 200
+
+# Itens fixados ficam no topo, sempre acessíveis (ctrl+p fixa/desfixa).
+pinned_on_top = true
+
+# O default é `true`, o que descarta símbolos e unicode. Para quem copia
+# código, isso joga fora justamente o que interessa: `->`, `=>`, `${}`,
+# acentos, emoji em commit. Aqui guarda tudo.
+ignore_symbols = false
+
+# 0 = nunca expira sozinho. O limite de quantidade acima já segura o
+# tamanho, e expiração por tempo só surpreende quando você procura algo
+# de duas semanas atrás.
+auto_cleanup = 0
+
+# OCR em imagens exige tesseract, que o install.sh não traz. Se quiser
+# pesquisar texto DENTRO de prints, instale `tesseract tesseract-data-por`
+# e ligue aqui.
+ocr = false

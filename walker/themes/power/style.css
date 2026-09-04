@@ -1,0 +1,71 @@
+/* power — menu de energia do Walker.
+   Caixa pequena ancorada no canto superior direito, logo abaixo do ícone
+   de power da barra. Sem campo de busca (o script chama com --nosearch):
+   são quatro opções fixas, não há o que pesquisar. */
+
+@define-color window_bg_color #0b0b0b;
+@define-color accent_bg_color #ffffff;
+@define-color theme_fg_color  #c8c8c8;
+
+/* Texto em SF Pro; ícones caem na JetBrains Mono por fallback. */
+* {
+  all: unset;
+  font-family: "SF Pro Text", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+}
+
+scrollbar { opacity: 0; }
+
+/* margin-top alinha a caixa com a base da barra (30px) mais um respiro;
+   margin-right alinha a borda direita com o padding da barra. */
+.box-wrapper {
+  background: rgba(11, 11, 11, 0.78);
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 4px 0;
+  margin-top: 36px;
+  margin-right: 8px;
+}
+
+/* O input continua no XML do layout, mas é ocultado pelo --nosearch.
+   Zerado aqui para não sobrar espaço reservado. */
+.search-container,
+.input {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.content-container { padding: 0; }
+.list { background: transparent; }
+
+.item-box {
+  padding: 7px 12px;
+  margin: 0 4px;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+}
+
+child:selected .item-box,
+row:selected .item-box {
+  background: #141414;
+  border-left: 2px solid #ffffff;
+}
+
+.item-text { color: #c8c8c8; }
+child:selected .item-text { color: #ffffff; font-weight: 600; }
+
+.item-subtext,
+.item-quick-activation,
+.keybinds,
+.preview {
+  /* sem subtítulo, sem dica de atalho, sem preview: quatro linhas e pronto */
+  opacity: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.placeholder { color: #3d3d3d; }

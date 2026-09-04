@@ -1,0 +1,460 @@
+/* ============================================================
+   mono — barra e notificações
+   Preto e branco. Nenhuma cor em lugar nenhum.
+   Hierarquia por peso, densidade e uma única barra de foco.
+   ============================================================ */
+
+/* paleta
+   #000000  chão absoluto (a barra)
+   #0b0b0b  superfície de janela
+   #141414  superfície elevada / hover
+   #262626  borda
+   #3d3d3d  rótulo, desabilitado
+   #8a8a8a  texto secundário
+   #c8c8c8  texto
+   #ffffff  primário, foco
+*/
+
+/* Texto em SF Pro; os glifos Nerd Font (que SF Pro não possui) caem na
+   JetBrains Mono pelo próprio fallback do fontconfig. Uma cadeia só,
+   sem precisar trocar de família por widget. */
+* {
+    all: unset;
+    font-family: "SF Pro Text", "JetBrainsMono Nerd Font", sans-serif;
+    font-size: 12px;
+}
+
+tooltip {
+    background: #0b0b0b;
+    border: 1px solid #262626;
+    border-radius: 6px;
+    color: #c8c8c8;
+    padding: 4px 8px;
+}
+
+/* ------------------------------------------------------------------ bar */
+
+window.Bar {
+    /* alpha em vez de preto sólido: é através deste alpha que o blur do
+       Hyprland aparece. Opaca, a layerrule de blur não teria efeito. */
+    background: rgba(0, 0, 0, 0.55);
+    color: #8a8a8a;
+    border-bottom: 1px solid rgba(38, 38, 38, 0.8);
+}
+
+/* No GTK4 o seletor filho `window.Bar > centerbox` não pega — a altura tem
+   que ir no nó centerbox direto, senão a barra encolhe para ~21px. */
+centerbox {
+    min-height: 34px;
+    padding: 0 8px;
+}
+
+.side {
+    /* mesmo respiro entre todos os grupos — o ritmo é o que segura
+       a barra em pé quando não há cor pra separar as coisas */
+    padding: 0 2px;
+}
+
+.side > * {
+    margin: 0 1px;
+}
+
+/* --------------------------------------------------------------- brand */
+
+.brand {
+    color: #8a8a8a;
+    font-size: 15px;
+    padding: 0 10px;
+    border-radius: 4px;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.brand:hover {
+    color: #ffffff;
+    background: #141414;
+}
+
+/* ---------------------------------------------------------- workspaces */
+
+.workspaces {
+    margin-left: 2px;
+}
+
+/* min-width maior que o dígito de propósito: a pílula da workspace ativa
+   precisa de corpo para ler como marcador, e com a SF Pro (proporcional)
+   os dígitos são mais estreitos do que eram na monoespaçada. */
+.workspaces button.ws {
+    color: #3d3d3d;
+    min-width: 26px;
+
+    /* A altura vem de margin + min-height, NÃO de padding vertical: a barra
+       tem altura fixa, e padding empurrava a pílula para fora, cortando-a
+       em cima e embaixo. Com a barra em 34px e 4px de margem de cada lado,
+       sobram 4px de folga — sem folga o GTK arredonda para cima e corta. */
+    padding: 0;
+    margin: 0 2px;
+    border-radius: 4px;
+    /* a transição é o que faz a troca de workspace parecer contínua
+       em vez de um corte seco entre dois estados */
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.workspaces button.ws:hover {
+    color: #8a8a8a;
+    background: #141414;
+}
+
+/* ocupada mas sem foco: cinza médio, sem pílula. Dá para ver onde há
+   janela sem competir com o marcador de foco. */
+.workspaces button.ws.occupied {
+    color: #8a8a8a;
+}
+
+.workspaces button.ws.active {
+    color: #000000;
+    background: #ffffff;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------- clock */
+
+.clock {
+    color: #c8c8c8;
+    font-weight: 600;
+    padding: 0 10px;
+    border-radius: 4px;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.clock:hover {
+    color: #ffffff;
+    background: #141414;
+}
+
+/* --------------------------------------------------------------- media */
+
+.media {
+    background: #0b0b0b;
+    border: 1px solid #1c1c1c;
+    border-radius: 5px;
+    padding: 0 2px;
+    margin-right: 4px;
+}
+
+.media button {
+    transition: color 160ms ease;
+}
+
+.mediaStep {
+    color: #3d3d3d;
+    min-width: 18px;
+    font-size: 14px;
+}
+
+.mediaStep:hover {
+    color: #ffffff;
+}
+
+.mediaTitle {
+    color: #8a8a8a;
+    padding: 0 6px;
+}
+
+.mediaTitle:hover {
+    color: #ffffff;
+}
+
+/* ------------------------------------------------------- metrics/status */
+
+.metric,
+.status {
+    padding: 0 7px;
+    border-radius: 4px;
+    transition: background-color 160ms ease;
+}
+
+.metric:hover,
+.status:hover {
+    background: #141414;
+}
+
+/* rótulo por extenso em vez de glifo Nerd Font: num tema sem cor,
+   texto é mais legível que ícone e não depende de fonte instalada */
+.metricLabel {
+    color: #3d3d3d;
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-right: 6px;
+}
+
+.metricValue {
+    color: #c8c8c8;
+    font-feature-settings: "tnum";
+}
+
+.metric:hover .metricValue,
+.status:hover .metricValue {
+    color: #ffffff;
+}
+
+/* ---------------------------------------------------------------- tray */
+
+.tray {
+    padding: 0 4px;
+}
+
+.trayItem {
+    padding: 0 4px;
+    border-radius: 4px;
+    transition: background-color 160ms ease;
+}
+
+.trayItem:hover {
+    background: #141414;
+}
+
+/* --------------------------------------------------------------- power */
+
+.power {
+    color: #3d3d3d;
+    min-width: 24px;
+    border-radius: 4px;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.power:hover {
+    color: #ffffff;
+    background: #141414;
+}
+
+/* -------------------------------------------------------- notifications */
+
+window.NotificationPopups {
+    background: transparent;
+}
+
+.notifications {
+    margin: 8px 10px 0 0;
+}
+
+.notification {
+    background: rgba(11, 11, 11, 0.82);
+    border: 1px solid #262626;
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    min-width: 340px;
+    transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.notification:hover {
+    background: #141414;
+    border-color: #3d3d3d;
+}
+
+.notification .header {
+    margin-bottom: 6px;
+}
+
+.notification .appName {
+    color: #3d3d3d;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.notification .time {
+    color: #3d3d3d;
+    font-size: 10px;
+    font-feature-settings: "tnum";
+}
+
+.notification .summary {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.notification .body {
+    color: #8a8a8a;
+    margin-top: 3px;
+}
+
+.notification .actions {
+    margin-top: 10px;
+}
+
+.notification .actions button {
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 4px;
+    color: #c8c8c8;
+    padding: 5px 0;
+    margin-right: 5px;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+.notification .actions button:last-child {
+    margin-right: 0;
+}
+
+.notification .actions button:hover {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* ---------------------------------------------------- ícones e divisores */
+
+/* Os rótulos por extenso (CPU/MEM/HOME) viraram glifos Nerd Font. O ícone
+   fica um ponto mais claro que o rótulo antigo porque agora ELE é quem
+   identifica a métrica — o texto que restou é só o número. */
+.metricIcon {
+    color: #6e6e6e;
+    font-size: 14px;
+    margin-right: 6px;
+}
+
+.metric:hover .metricIcon,
+.clock:hover .metricIcon {
+    color: #ffffff;
+}
+
+/* Rede é só ícone, sem valor: não precisa do respiro à direita. */
+.netOnly .metricIcon {
+    margin-right: 0;
+}
+
+/* Rede é só ícone, sem número: metade do respiro lateral basta. */
+.netOnly {
+    padding: 0 5px;
+}
+
+/* Filete de 1px separando os três grupos da direita: apps do tray,
+   leituras de sistema, e relógio. Sem cor, o espaço sozinho não bastava
+   para agrupar. */
+.divider {
+    background: #262626;
+    min-width: 1px;
+    margin: 8px 6px;
+}
+
+.clockValue {
+    color: #ffffff;
+    font-weight: 600;
+    font-feature-settings: "tnum";
+}
+
+/* ------------------------------------------------------------- tooltips */
+
+/* Os tooltips explicam o que o ícone e o número não dizem: modelo da CPU,
+   GiB absolutos, tamanho real do disco, nome do dispositivo de áudio.
+   Multilinha, alinhados à esquerda, mesma moldura do resto do tema. */
+tooltip,
+tooltip.background {
+    background: rgba(11, 11, 11, 0.96);
+    border: 1px solid #262626;
+    border-radius: 5px;
+}
+
+tooltip label {
+    color: #c8c8c8;
+    font-size: 12px;
+    padding: 6px 9px;
+}
+
+/* --------------------------------------------------------- título da janela */
+
+/* Cinza secundário de propósito: o branco deste tema pertence ao marcador de
+   foco (workspace ativa) e ao relógio. Um título em branco disputaria a
+   atenção com os dois, e ele é informação de contexto, não de ação. */
+.windowTitle label {
+    color: #8a8a8a;
+    font-size: 12px;
+    padding: 0 10px;
+}
+
+/* --------------------------------------------------------- popover de volume */
+
+popover > contents,
+.volumePopover > contents {
+    background: rgba(11, 11, 11, 0.96);
+    border: 1px solid #262626;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+/* GTK4 desenha uma setinha apontando para o botão; num tema chapado ela só
+   suja o canto. */
+popover > arrow {
+    background: transparent;
+    border: none;
+    min-width: 0;
+    min-height: 0;
+}
+
+.volumeHead {
+    margin-bottom: 10px;
+}
+
+.volumeDevice {
+    color: #8a8a8a;
+    font-size: 11px;
+}
+
+.volumePct {
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    font-feature-settings: "tnum";
+}
+
+.volumeRow {
+    margin-bottom: 10px;
+}
+
+.volumeMute {
+    color: #8a8a8a;
+    font-size: 14px;
+    padding: 0 10px 0 0;
+    transition: color 160ms ease;
+}
+
+.volumeMute:hover {
+    color: #ffffff;
+}
+
+/* Trilho fino, cursor branco sólido: mesma linguagem da barra de foco. */
+scale trough {
+    background: #262626;
+    border-radius: 2px;
+    min-height: 4px;
+}
+
+scale highlight {
+    background: #ffffff;
+    border-radius: 2px;
+    min-height: 4px;
+}
+
+scale slider {
+    background: #ffffff;
+    border-radius: 50%;
+    min-width: 12px;
+    min-height: 12px;
+    margin: -5px;
+    transition: background-color 160ms ease;
+}
+
+scale slider:hover {
+    background: #c8c8c8;
+}
+
+.volumeMore {
+    color: #5a5a5a;
+    font-size: 11px;
+    padding: 7px 0 0 0;
+    border-top: 1px solid #1c1c1c;
+    transition: color 160ms ease;
+}
+
+.volumeMore:hover {
+    color: #c8c8c8;
+}

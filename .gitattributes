@@ -1,0 +1,6 @@
+# Dotfiles de Linux: NUNCA converter para CRLF.
+# Um .zshrc com \r\n faz o zsh reclamar "command not found: ^M" em toda linha,
+# e um script com \r\n nem executa (o shebang vira "/usr/bin/env bash\r").
+* text eol=lf
+*.png binary
+*.jpg binary
