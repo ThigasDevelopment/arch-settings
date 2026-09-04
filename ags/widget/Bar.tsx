@@ -138,7 +138,12 @@ function WindowTitle({ visible }: { visible: any }) {
                         <label
                             maxWidthChars={44}
                             ellipsize={3}
-                            label={createBinding(client, "title")}
+                            /* `?? ""` porque o Gtk.Label recusa null: quando a
+                               janela em foco fecha, o gnim descarta a ligação e
+                               escreve o valor final de volta na propriedade —
+                               que a essa altura é null. Sem a guarda, cada
+                               troca de foco cospe um JS ERROR no log. */
+                            label={createBinding(client, "title").as((t) => t ?? "")}
                         />
                     ) : (
                         <label label="" />
