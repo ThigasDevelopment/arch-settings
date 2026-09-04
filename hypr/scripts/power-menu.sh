@@ -13,5 +13,7 @@ case "$chosen" in
   Desligar)          systemctl poweroff ;;
   Reiniciar)         systemctl reboot ;;
   Suspender)         systemctl suspend ;;
-  "Encerrar sessão") hyprctl dispatch exit ;;
+  # Expressão Lua, não "exit" solto: o dispatch deste Hyprland é avaliado
+  # como Lua (mesma forma usada no bind de SUPER+Escape no hyprland.lua).
+  "Encerrar sessão") hyprctl dispatch 'hl.dsp.exit()' ;;
 esac

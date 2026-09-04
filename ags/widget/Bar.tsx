@@ -10,9 +10,21 @@ import AstalWp from "gi://AstalWp"
 import AstalNetwork from "gi://AstalNetwork"
 import AstalTray from "gi://AstalTray"
 
-// Abre um app numa workspace vazia — mesmo comportamento dos on-click da waybar.
+// Este Hyprland é configurado em Lua (hypr/hyprland.lua), e o `dispatch` do
+// IPC passou a ser avaliado como Lua junto: `dispatch workspace 4` vira
+// `hl.dispatch(workspace 4)`, que é erro de sintaxe. Todo despacho daqui
+// precisa ser uma EXPRESSÃO Lua — a mesma forma que o hyprland.lua usa nos
+// binds (hl.dsp.focus, hl.dsp.exec_cmd).
+//
+// Isso não dava erro visível em lugar nenhum: o hyprctl respondia, o
+// .catch() engolia, e o botão simplesmente não fazia nada.
+const dispatch = (lua: string) =>
+    execAsync(["hyprctl", "dispatch", lua]).catch(() => {})
+
+// Abre um app numa workspace vazia. A regra `[workspace empty]` continua
+// valendo, só que agora dentro do argumento do exec_cmd.
 const spawnEmpty = (cmd: string) =>
-    execAsync(["hyprctl", "dispatch", "exec", `[workspace empty] ${cmd}`]).catch(() => {})
+    dispatch(`hl.dsp.exec_cmd("[workspace empty] ${cmd}")`)
 
 /* ------------------------------------------------------------------ left */
 
@@ -49,7 +61,7 @@ function Workspaces() {
                         if (n === 0) return `Área ${id}  ·  vazia`
                         return `Área ${id}  ·  ${n} ${n === 1 ? "janela" : "janelas"}`
                     })}
-                    onClicked={() => hypr.dispatch("workspace", `${id}`)}
+                    onClicked={() => dispatch(`hl.dsp.focus({ workspace = ${id} })`)}
                 >
                     <label label={`${id}`} />
                 </button>
@@ -282,6 +294,70 @@ function Divider() {
     return <box class="divider" />
 }
 
+// Um ícone de tray responde a dois gestos diferentes, então ele não pode ser
+// um menubutton: o GtkMenuButton abre o popover em QUALQUER clique, e era
+// exatamente isso que deixava o app inalcançável — não sobrava clique nenhum
+// para chegar no Activate do protocolo.
+//
+// Aqui é um <button> comum, com o popover do menu criado e ancorado na mão:
+//   esquerdo  →  item.activate(), o "mostra/esconde a janela" do app
+//   direito   →  o menu do dbusmenu
+//
+// Apps que anunciam is-menu estão declarando que NÃO implementam Activate.
+// Para esses o esquerdo também abre o menu — senão o ícone ficaria morto, que
+// é justamente o defeito que estamos consertando.
+function TrayItem({ item }: { item: AstalTray.TrayItem }) {
+    let popover: Gtk.PopoverMenu
+
+    const openMenu = () => {
+        // O app pode reconstruir o menu na hora de abrir (conta logada, estado
+        // do player, etc.). Sem este aviso o menu mostra o de um minuto atrás.
+        item.about_to_show()
+        popover.popup()
+    }
+
+    const setup = (self: Gtk.Button) => {
+        popover = Gtk.PopoverMenu.new_from_model(item.menuModel)
+        popover.set_parent(self)
+        self.insert_action_group("dbusmenu", item.actionGroup)
+
+        // Menu e grupo de ações são reenviados pelo app ao longo da vida do
+        // ícone; ligar uma vez só congelaria o menu do primeiro segundo.
+        const ids = [
+            item.connect("notify::menu-model", () =>
+                popover.set_menu_model(item.menuModel),
+            ),
+            item.connect("notify::action-group", () =>
+                self.insert_action_group("dbusmenu", item.actionGroup),
+            ),
+        ]
+
+        // O GtkButton só reage ao botão primário, então o secundário passa
+        // direto para este gesto — os dois não disputam a mesma sequência.
+        const right = new Gtk.GestureClick({ button: Gdk.BUTTON_SECONDARY })
+        right.connect("pressed", openMenu)
+        self.add_controller(right)
+
+        // Popover ancorado na mão tem que ser desancorado na mão: sem isto o
+        // GTK reclama de filho remanescente toda vez que um app fecha o ícone.
+        self.connect("destroy", () => {
+            ids.forEach((id) => item.disconnect(id))
+            popover.unparent()
+        })
+    }
+
+    return (
+        <button
+            class="trayItem"
+            tooltipMarkup={createBinding(item, "tooltipMarkup")}
+            onClicked={() => (item.isMenu ? openMenu() : item.activate(0, 0))}
+            $={setup}
+        >
+            <image gicon={createBinding(item, "gicon")} />
+        </button>
+    )
+}
+
 function SysTray() {
     const tray = AstalTray.get_default()
     const items = createBinding(tray, "items")
@@ -289,18 +365,7 @@ function SysTray() {
     return (
         <box class="tray">
             <For each={items}>
-                {(item: AstalTray.TrayItem) => (
-                    <menubutton
-                        class="trayItem"
-                        tooltipMarkup={createBinding(item, "tooltipMarkup")}
-                        menuModel={createBinding(item, "menuModel")}
-                        $={(self) =>
-                            self.insert_action_group("dbusmenu", item.actionGroup)
-                        }
-                    >
-                        <image gicon={createBinding(item, "gicon")} />
-                    </menubutton>
-                )}
+                {(item: AstalTray.TrayItem) => <TrayItem item={item} />}
             </For>
         </box>
     )
@@ -333,12 +398,11 @@ function Network() {
     )
 }
 
-// Volume: ícone que acompanha o nível, mais o valor em %.
-function Volume() {
-    const speaker = AstalWp.get_default()!.audio.defaultSpeaker
-
-    const icon = createComputed(
-        [createBinding(speaker, "volume"), createBinding(speaker, "mute")],
+// Glifo de volume a partir do nível. Vale para qualquer nó — a saída padrão
+// na barra, uma placa de som na lista, o áudio de um app.
+const volumeGlyph = (node: AstalWp.Node) =>
+    createComputed(
+        [createBinding(node, "volume"), createBinding(node, "mute")],
         (volume, mute) => {
             if (mute) return ICON.volMuted
             if (volume < 0.01) return ICON.volLow
@@ -347,95 +411,203 @@ function Volume() {
         },
     )
 
-    const pct = createComputed(
-        [createBinding(speaker, "volume"), createBinding(speaker, "mute")],
+const volumePct = (node: AstalWp.Node) =>
+    createComputed(
+        [createBinding(node, "volume"), createBinding(node, "mute")],
         (volume, mute) => (mute ? "--" : `${Math.round(volume * 100)}%`),
     )
 
-    const tip = createComputed(
-        [
-            createBinding(speaker, "description"),
-            createBinding(speaker, "volume"),
-            createBinding(speaker, "mute"),
-        ],
-        (device, volume, mute) => {
-            const estado = mute ? "mudo" : `volume em ${Math.round(volume * 100)}%`
-            return `${device || "Saída de áudio"}\n${estado}\nclique para o controle`
-        },
-    )
+// Uma linha de som: nome, porcentagem, botão de mudo e slider.
+//
+// A mesma linha serve para uma saída e para o áudio de um app sem nenhuma
+// diferença, porque AstalWp.Endpoint e AstalWp.Stream herdam os dois de
+// AstalWp.Node — e volume, mute e description moram no Node.
+function SoundRow({
+    node,
+    current,
+    onPick,
+}: {
+    node: AstalWp.Node
+    current?: any
+    onPick?: () => void
+}) {
+    const icon = volumeGlyph(node)
+    const pct = volumePct(node)
 
-    // Slider de verdade, num popover ancorado sob o ícone.
-    //
-    // Isto NÃO cabe no Walker: ele é um renderizador de lista, não tem
-    // primitiva de slider — o provider wireplumber do elephant só oferece
-    // "subir/descer volume" como itens com atalho, o que é pior do que já
-    // temos. Aqui é um Gtk.Scale arrastável, ligado nos dois sentidos ao
-    // wireplumber: mexer aqui muda o sistema, e mudar por fora (tecla de
-    // mídia, pavucontrol) move o slider.
+    const name = createBinding(node, "description").as((d) => d || node.name || "áudio")
+
+    // Ligação de mão dupla com o wireplumber, como no popover antigo, com uma
+    // diferença que a lista dinâmica obriga: o handler é desconectado quando a
+    // linha morre. Sem isso, desconectar um fone USB deixa um callback vivo
+    // escrevendo num Gtk.Scale já destruído.
     const bindScale = (scale: Gtk.Scale) => {
         scale.set_range(0, 1)
         scale.set_increments(0.05, 0.1)
         scale.set_draw_value(false)
-        scale.set_value(speaker.volume)
+        scale.set_value(node.volume)
 
         let interno = false
 
         scale.connect("value-changed", () => {
             if (interno) return
-            speaker.volume = scale.get_value()
+            node.volume = scale.get_value()
         })
 
-        // Guarda contra laço: sem o flag, atualizar o slider a partir do
-        // wireplumber dispara value-changed, que reescreve o volume, que
-        // emite de novo.
-        speaker.connect("notify::volume", () => {
+        const id = node.connect("notify::volume", () => {
             interno = true
-            scale.set_value(speaker.volume)
+            scale.set_value(node.volume)
             interno = false
         })
+
+        scale.connect("destroy", () => node.disconnect(id))
     }
 
     return (
-        <menubutton class="metric volume" tooltipText={tip}>
-            <box>
-                <label class="metricIcon" label={icon} />
-                <label class="metricValue" label={pct} />
+        <box
+            class={
+                current
+                    ? current((c: boolean) => (c ? "soundRow current" : "soundRow"))
+                    : "soundRow"
+            }
+            orientation={Gtk.Orientation.VERTICAL}
+        >
+            <box class="soundHead">
+                {onPick
+                    ? [
+                          <button
+                              class="soundName"
+                              hexpand
+                              tooltipText="Tornar esta a saída padrão"
+                              onClicked={onPick}
+                          >
+                              <label xalign={0} maxWidthChars={24} ellipsize={3} label={name} />
+                          </button>,
+                      ]
+                    : [
+                          <label
+                              class="soundName"
+                              xalign={0}
+                              hexpand
+                              maxWidthChars={24}
+                              ellipsize={3}
+                              label={name}
+                          />,
+                      ]}
+                <label class="soundPct" label={pct} />
             </box>
 
-            <popover class="volumePopover">
-                <box orientation={Gtk.Orientation.VERTICAL} widthRequest={230}>
-                    <box class="volumeHead">
-                        <label
-                            class="volumeDevice"
-                            maxWidthChars={24}
-                            ellipsize={3}
-                            xalign={0}
-                            hexpand
-                            label={createBinding(speaker, "description").as(
-                                (d) => d || "Saída de áudio",
+            <box class="soundSlider">
+                <button class="volumeMute" onClicked={() => (node.mute = !node.mute)}>
+                    <label label={icon} />
+                </button>
+
+                <Gtk.Scale hexpand orientation={Gtk.Orientation.HORIZONTAL} $={bindScale} />
+            </box>
+        </box>
+    )
+}
+
+// Volume: na barra, o ícone e o valor da saída PADRÃO. No popover, todas as
+// saídas e todos os apps tocando, cada um com seu próprio slider.
+//
+// Isto não cabe no Walker (ele é um renderizador de lista, não tem primitiva
+// de slider) nem no pavucontrol para o uso do dia a dia — o pavucontrol
+// continua ali no rodapé para configuração de perfil e entrada.
+function Volume() {
+    const audio = AstalWp.get_default()!.audio
+
+    // Guardado para o botão do mixer poder fechar o popover. O GTK não fecha
+    // sozinho: o clique é consumido pelo botão, não vaza para fora do
+    // popover, então sem o popdown() o pavucontrol abre ATRÁS de um popover
+    // que continua aberto por cima.
+    let popover: Gtk.Popover
+
+    const speakers = createBinding(audio, "speakers")
+    const streams = createBinding(audio, "streams")
+
+    return (
+        <menubutton class="metric volume">
+            {/* `With` porque a ligação é aninhada: trocar a saída padrão troca
+                o OBJETO defaultSpeaker, e só depois o volume DESSE objeto muda.
+                Um createBinding direto congelaria a barra no aparelho que era
+                padrão quando o AGS subiu. */}
+            <With value={createBinding(audio, "defaultSpeaker")}>
+                {(sp: AstalWp.Endpoint | null) =>
+                    sp ? (
+                        <box
+                            tooltipText={createComputed(
+                                [createBinding(sp, "description"), volumePct(sp)],
+                                (device, valor) =>
+                                    `${device || "Saída de áudio"}\n${valor}\nclique para saídas e apps`,
                             )}
-                        />
-                        <label class="volumePct" label={pct} />
+                        >
+                            <label class="metricIcon" label={volumeGlyph(sp)} />
+                            <label class="metricValue" label={volumePct(sp)} />
+                        </box>
+                    ) : (
+                        <box>
+                            <label class="metricIcon" label={ICON.volMuted} />
+                            <label class="metricValue" label="--" />
+                        </box>
+                    )
+                }
+            </With>
+
+            <popover class="volumePopover" $={(self) => (popover = self)}>
+                <box orientation={Gtk.Orientation.VERTICAL} widthRequest={280}>
+                    <label class="soundSection" xalign={0} label="Saídas" />
+
+                    {/* Cada <For> mora numa caixa só dele, e não solto entre
+                        irmãos estáticos: o For anexa os itens ao pai conforme
+                        eles chegam, então com irmãos ele empurra a lista para
+                        depois de todos — as saídas apareciam embaixo do botão
+                        do mixer. A caixa dedicada devolve a posição ao grupo e
+                        deixa a ordem interna com o For. */}
+                    <box orientation={Gtk.Orientation.VERTICAL}>
+                        {/* A saída padrão é marcada com a mesma barra branca de
+                            2px que marca a workspace em foco e o alvo no menu
+                            do tray. Clicar no nome troca o padrão. */}
+                        <For each={speakers}>
+                            {(ep: AstalWp.Endpoint) => (
+                                <SoundRow
+                                    node={ep}
+                                    current={createBinding(ep, "isDefault")}
+                                    onPick={() => (ep.isDefault = true)}
+                                />
+                            )}
+                        </For>
                     </box>
 
-                    <box class="volumeRow">
-                        <button
-                            class="volumeMute"
-                            onClicked={() => (speaker.mute = !speaker.mute)}
-                        >
-                            <label label={icon} />
-                        </button>
+                    {/* Some inteira quando nada está tocando: uma seção com
+                        título e nenhum item é só ruído. */}
+                    <box
+                        class="soundApps"
+                        orientation={Gtk.Orientation.VERTICAL}
+                        visible={streams((list) => list.length > 0)}
+                    >
+                        {/* Filete separando as saídas dos apps. É o mesmo
+                            recurso dos três grupos da barra: sem cor, só o
+                            espaço não bastava para dizer que aqui começa
+                            outra coisa. */}
+                        <box class="soundDivider" />
 
-                        <Gtk.Scale
-                            hexpand
-                            orientation={Gtk.Orientation.HORIZONTAL}
-                            $={bindScale}
-                        />
+                        <label class="soundSection" xalign={0} label="Aplicativos" />
+
+                        <box orientation={Gtk.Orientation.VERTICAL}>
+                            <For each={streams}>
+                                {(st: AstalWp.Stream) => <SoundRow node={st} />}
+                            </For>
+                        </box>
                     </box>
 
                     <button
                         class="volumeMore"
-                        onClicked={() => execAsync("pwvucontrol").catch(() => {})}
+                        onClicked={() => {
+                            // Fecha antes de abrir: o mixer completo substitui
+                            // este popover, não convive com ele.
+                            popover.popdown()
+                            execAsync("pavucontrol").catch(() => {})
+                        }}
                     >
                         <label xalign={0} label="Abrir o mixer completo" />
                     </button>
@@ -485,10 +657,17 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
 
                 {/*
                     Ordem da direita, do mais volátil para o mais estável:
-                    ícones de app (tray) → leituras de sistema → relógio → energia.
+                    ícones de app (tray) → leituras de sistema → estado → energia.
                     O tray vem primeiro porque é o único grupo cujo conteúdo é
                     imprevisível; deixá-lo na borda faria o resto dançar de posição
                     toda vez que um app abrisse ou fechasse.
+
+                    A rede fica DEPOIS do filete e colada no power, não junto das
+                    métricas: todo item daquele bloco é um par ícone+número, e a
+                    rede é só ícone — um ímpar no meio de pares quebra o ritmo.
+                    Encostada no power ela fica com o único outro item só-glifo da
+                    barra, e o relógio, que é o que mais se lê, ganha a posição
+                    logo após o filete, que é a mais fácil de achar.
                 */}
                 <box $type="end" class="side" halign={Gtk.Align.END}>
                     <SysTray />
@@ -531,11 +710,11 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                           ]
                         : []}
 
-                    <Network />
                     <Volume />
 
                     <Divider />
                     <Clock />
+                    <Network />
 
                     <button
                         class="power"

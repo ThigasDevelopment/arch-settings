@@ -1,4 +1,4 @@
-# Qt: UM único platform theme, o mesmo valor que o hyprland.conf exporta.
+# Qt: UM único platform theme, o mesmo valor que o hyprland.lua exporta.
 # Antes este arquivo dizia qt5ct e o hyprland.conf dizia qt6ct — um
 # derrubava o outro conforme a ordem de leitura, e os apps Qt saíam
 # destoando. Agora os dois dizem qt6ct.

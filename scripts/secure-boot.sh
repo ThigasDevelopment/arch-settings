@@ -38,16 +38,6 @@ if ! command -v sbctl >/dev/null 2>&1; then
     exit 1
 fi
 
-cat <<.MSG.
-== Como ler o status do sbctl ==
-
-  "Installed: X sbctl is not installed" NAO fala do pacote.
-  E jargao do sbctl para "as chaves dele ainda nao estao enroladas no
-  firmware". Se voce chegou ate aqui, o pacote esta instalado.
-
-  O que importa e a linha "Setup Mode".
-.MSG.
-
 echo "== Estado atual =="
 sudo sbctl status
 echo
@@ -84,12 +74,6 @@ echo "== Assinando bootloader e kernel =="
 #
 # `sbctl sign -s` registra o arquivo no banco do sbctl, e o hook do pacman
 # re-assina sozinho a cada atualização de kernel ou bootloader.
-#
-# CASO UKI: se o archinstall montou o boot com Unified Kernel Image, o
-# artefato bootável é um único /boot/EFI/Linux/*.efi — não existe vmlinuz
-# separado a assinar. O `sbctl verify` varre a ESP e acha o UKI sozinho;
-# uma lista fixa de caminhos passaria batido por ele e você ligaria o
-# Secure Boot numa máquina que não boota.
 
 mapfile -t unsigned < <(sudo sbctl verify 2>/dev/null | awk '/is not signed$/ {print $2}')
 

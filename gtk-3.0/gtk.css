@@ -2,12 +2,9 @@
    Sobrescreve as cores nomeadas que o adw-gtk3 consome.
    Sem isto o adw-gtk3-dark entrega o azul do Adwaita no seletor. */
 
-/* Alpha nas superfícies base: o blur do Hyprland só atravessa o que é
-   translúcido. Só o FUNDO fica com alpha — texto e ícones pintam por cima
-   e continuam opacos, então nada fica lavado. */
-@define-color theme_bg_color          rgba(11, 11, 11, 0.86);
+@define-color theme_bg_color          #0b0b0b;
 @define-color theme_fg_color          #c8c8c8;
-@define-color theme_base_color        rgba(11, 11, 11, 0.80);
+@define-color theme_base_color        #0b0b0b;
 @define-color theme_text_color        #c8c8c8;
 
 @define-color theme_selected_bg_color #ffffff;
@@ -37,12 +34,4 @@ button,
 entry {
   border-radius: 4px;
   transition: background-color 160ms ease, border-color 160ms ease;
-}
-
-/* Alguns apps GTK3 pintam a janela sem passar pelas cores nomeadas.
-   Força o fundo translúcido também no nó da janela. */
-window,
-window.background,
-.background {
-  background-color: rgba(11, 11, 11, 0.86);
 }

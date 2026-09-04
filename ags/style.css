@@ -18,6 +18,14 @@
 /* Texto em SF Pro; os glifos Nerd Font (que SF Pro não possui) caem na
    JetBrains Mono pelo próprio fallback do fontconfig. Uma cadeia só,
    sem precisar trocar de família por widget. */
+/* ARMADILHA: este bloco casa com TODO nó, inclusive os <label> dentro de
+   botões. Uma regra que casa diretamente sempre vence herança, por mais
+   específico que seja o seletor do pai — então `.foo { font-size: 14px }`
+   num <button class="foo"><label/></button> NÃO chega no texto: o label
+   continua nos 12px daqui.
+   Por isso todo font-size abaixo mira o label (`.foo label`, ou a classe
+   posta no próprio label). O color não sofre disso: `all: unset` o deixa
+   herdando, e este bloco não o redefine. */
 * {
     all: unset;
     font-family: "SF Pro Text", "JetBrainsMono Nerd Font", sans-serif;
@@ -63,7 +71,6 @@ centerbox {
 
 .brand {
     color: #8a8a8a;
-    font-size: 15px;
     padding: 0 10px;
     border-radius: 4px;
     transition: color 160ms ease, background-color 160ms ease;
@@ -72,6 +79,12 @@ centerbox {
 .brand:hover {
     color: #ffffff;
     background: #141414;
+}
+
+/* No label, não no botão — ver a armadilha no topo do arquivo. O glifo passou
+   todo esse tempo em 12px (medido: 8x8px) enquanto o CSS dizia 15px. */
+.brand label {
+    font-size: 19px;
 }
 
 /* ---------------------------------------------------------- workspaces */
@@ -148,6 +161,9 @@ centerbox {
 .mediaStep {
     color: #3d3d3d;
     min-width: 18px;
+}
+
+.mediaStep label {
     font-size: 14px;
 }
 
@@ -178,15 +194,6 @@ centerbox {
     background: #141414;
 }
 
-/* rótulo por extenso em vez de glifo Nerd Font: num tema sem cor,
-   texto é mais legível que ícone e não depende de fonte instalada */
-.metricLabel {
-    color: #3d3d3d;
-    font-size: 10px;
-    letter-spacing: 1px;
-    margin-right: 6px;
-}
-
 .metricValue {
     color: #c8c8c8;
     font-feature-settings: "tnum";
@@ -215,6 +222,12 @@ centerbox {
 
 /* --------------------------------------------------------------- power */
 
+/* 14px para casar com o .metricIcon da rede, que agora é vizinha de porta:
+   dois glifos lado a lado em corpos diferentes leem como desalinhamento. */
+.power label {
+    font-size: 14px;
+}
+
 .power {
     color: #3d3d3d;
     min-width: 24px;
@@ -240,16 +253,60 @@ window.NotificationPopups {
 .notification {
     background: rgba(11, 11, 11, 0.82);
     border: 1px solid #262626;
+    /* A borda esquerda já nasce com 2px, cinza. A marca de urgência crítica
+       só troca a COR dela — se a largura mudasse junto, o conteúdo pularia
+       1px para o lado no momento em que o alerta aparece. */
+    border-left-width: 2px;
     border-radius: 6px;
     padding: 12px 14px;
     margin-bottom: 6px;
     min-width: 340px;
-    transition: background-color 160ms ease, border-color 160ms ease;
+    opacity: 1;
+    transition: background-color 160ms ease, border-color 160ms ease,
+        opacity 220ms ease;
 }
 
 .notification:hover {
     background: #141414;
     border-color: #3d3d3d;
+}
+
+/* Saída: o cartão desbota enquanto o revealer recolhe a altura. Os dois
+   juntos, na mesma duração (ANIM em Notifications.tsx) — o recolhimento
+   sozinho parece um esmagamento, o desbotamento sozinho deixa um buraco na
+   pilha até o widget ser destruído. */
+.notification.closing {
+    opacity: 0;
+}
+
+/* Urgência crítica: a mesma barra branca que marca o alvo no menu do tray e
+   a workspace em foco. É o único lugar do tema onde o branco vira alarme, e
+   funciona porque ele é escasso em todo o resto. */
+.notification.critical {
+    border-left-color: #ffffff;
+}
+
+.notification.critical:hover {
+    border-left-color: #ffffff;
+}
+
+/* Ícone do app no cabeçalho: mesmo tamanho e mesmo cinza dos rótulos de
+   metadado, porque é isso que ele é — não compete com a miniatura. */
+.notification .appIcon {
+    -gtk-icon-size: 12px;
+    margin-right: 6px;
+    /* Fica em cor, por decisão sua. O ícone do app e a miniatura são as duas
+       únicas exceções à regra "nenhuma cor" do topo deste arquivo: os dois
+       são conteúdo que vem de fora, não moldura desenhada por nós. O 0.55 de
+       opacidade é o que mantém o cabeçalho subordinado ao texto. */
+    opacity: 0.55;
+}
+
+/* Miniatura (capa, avatar, print). Cantos de 4px como todo elemento interno
+   do tema; o 6px é reservado para as caixas externas. */
+.notification .thumb {
+    border-radius: 4px;
+    margin-right: 11px;
 }
 
 .notification .header {
@@ -322,10 +379,9 @@ window.NotificationPopups {
     margin-right: 0;
 }
 
-/* Rede é só ícone, sem número: metade do respiro lateral basta. */
-.netOnly {
-    padding: 0 5px;
-}
+/* Herda o padding de .metric (0 7px). O 5px de antes existia para a rede
+   ocupar menos espaço no meio das métricas; fora daquele bloco não há mais
+   ritmo para preservar, e o respiro cheio a separa melhor do filete. */
 
 /* Filete de 1px separando os três grupos da direita: apps do tray,
    leituras de sistema, e relógio. Sem cor, o espaço sozinho não bastava
@@ -390,29 +446,91 @@ popover > arrow {
     min-height: 0;
 }
 
-.volumeHead {
+/* Título de seção do popover de som ("Saídas", "Aplicativos"). Mesmo
+   tratamento do .appName das notificações: é rótulo de agrupamento, o degrau
+   mais baixo da hierarquia. */
+.soundSection {
+    /* Branco, por decisão sua. Ele continua se distinguindo do nome da saída
+       padrão — que também é branco — pelo corpo: 10px com letter-spacing
+       contra 11px sem. E a barra branca de 2px segue sendo a única coisa que
+       responde "para onde o áudio está indo". */
+    color: #ffffff;
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin: 2px 0 7px 2px;
+}
+
+.soundApps {
+    margin-top: 2px;
+}
+
+/* Irmão horizontal do .divider da barra: mesma cor, mesmo 1px. */
+.soundDivider {
+    background: #262626;
+    min-height: 1px;
+    margin: 0 0 11px 0;
+}
+
+/* Uma saída ou um app. A borda esquerda já nasce com 2px transparentes: a
+   marca de "esta é a saída padrão" só troca a cor, senão a linha inteira
+   pularia 2px para o lado ao virar padrão. */
+.soundRow {
+    border-left: 2px solid transparent;
+    padding-left: 8px;
     margin-bottom: 10px;
 }
 
-.volumeDevice {
+.soundRow.current {
+    border-left-color: #ffffff;
+}
+
+.soundHead {
+    margin-bottom: 5px;
+}
+
+.soundName {
     color: #8a8a8a;
+    transition: color 160ms ease;
+}
+
+/* Os dois seletores porque a classe cai em nós diferentes: <button> na saída
+   (o nome troca o padrão) e <label> no app. Sem o primeiro, as saídas ficavam
+   em 12px e os apps em 11px, na mesma lista. */
+.soundName,
+.soundName label {
     font-size: 11px;
 }
 
-.volumePct {
+/* Só a saída padrão fica em branco. Com três placas de som na lista, é este
+   contraste que responde "para onde o áudio está indo" antes de você ler
+   qualquer nome. */
+.soundRow.current .soundName {
+    color: #ffffff;
+}
+
+/* O nome é clicável quando a linha é uma saída (troca o padrão) e é um label
+   simples quando é um app. O hover só existe no primeiro caso. */
+button.soundName:hover {
+    color: #ffffff;
+}
+
+.soundPct {
     color: #ffffff;
     font-size: 11px;
     font-weight: 600;
     font-feature-settings: "tnum";
 }
 
-.volumeRow {
-    margin-bottom: 10px;
+.soundRow:not(.current) .soundPct {
+    color: #8a8a8a;
+}
+
+.volumeMute label {
+    font-size: 14px;
 }
 
 .volumeMute {
     color: #8a8a8a;
-    font-size: 14px;
     padding: 0 10px 0 0;
     transition: color 160ms ease;
 }
@@ -447,9 +565,12 @@ scale slider:hover {
     background: #c8c8c8;
 }
 
+.volumeMore label {
+    font-size: 11px;
+}
+
 .volumeMore {
     color: #5a5a5a;
-    font-size: 11px;
     padding: 7px 0 0 0;
     border-top: 1px solid #1c1c1c;
     transition: color 160ms ease;
@@ -457,4 +578,133 @@ scale slider:hover {
 
 .volumeMore:hover {
     color: #c8c8c8;
+}
+
+/* ------------------------------------------------------- menu do tray */
+
+/* Os menus dos ícones de tray são GtkPopoverMenu construídos a partir do
+   menuModel do dbusmenu — nós que o `* { all: unset }` lá em cima deixa
+   completamente pelados: sem padding, sem hover, sem marca de seleção.
+   Tudo aqui é reconstrução, não ajuste.
+
+   A linguagem é a do tema `power` do Walker (hypr/scripts/power-menu.sh):
+   item com respiro, cantos de 4px e uma barra branca de 2px à esquerda
+   marcando o alvo. O fundo continua o rgba(11,11,11,0.96) dos demais
+   popovers da barra, e não o 0.78 do Walker — este menu abre a dois
+   centímetros do popover de volume, e dois pretos diferentes lado a lado
+   leem como erro. */
+
+popover.menu > contents {
+    /* sobrescreve o padding: 12px do popover genérico — num menu o item
+       precisa ir de ponta a ponta, com o respiro na margem dele mesmo */
+    padding: 4px 0;
+    min-width: 160px;
+}
+
+popover.menu modelbutton {
+    color: #c8c8c8;
+    padding: 7px 12px;
+    margin: 0 4px;
+    min-height: 0;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+/* Sem font-weight no hover de propósito: a largura do popover é medida no
+   estado de repouso, então engrossar a fonte só faria o rótulo passar a
+   caber por pouco e virar reticências ao passar o mouse. */
+popover.menu modelbutton:hover {
+    color: #ffffff;
+    background: #141414;
+    border-left-color: #ffffff;
+}
+
+popover.menu modelbutton:disabled {
+    color: #3d3d3d;
+}
+
+popover.menu modelbutton:disabled:hover {
+    background: transparent;
+    border-left-color: transparent;
+}
+
+/* Cabeçalho de seção (o dbusmenu de alguns apps manda um). */
+popover.menu label.title {
+    color: #3d3d3d;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 6px 14px 2px 14px;
+}
+
+popover.menu separator {
+    background: #262626;
+    min-height: 1px;
+    margin: 4px 10px;
+}
+
+/* Setas de submenu e de voltar: o `all: unset` apaga o -gtk-icon-source
+   junto com o resto, e sem ele o item de submenu fica sem nenhuma pista
+   de que abre outra coisa. */
+popover.menu modelbutton arrow {
+    min-width: 14px;
+    min-height: 14px;
+    margin-left: 8px;
+    color: #5a5a5a;
+}
+
+popover.menu modelbutton arrow.right {
+    -gtk-icon-source: -gtk-icontheme("pan-end-symbolic");
+}
+
+popover.menu modelbutton arrow.left {
+    -gtk-icon-source: -gtk-icontheme("pan-start-symbolic");
+    margin-left: 0;
+    margin-right: 8px;
+}
+
+popover.menu modelbutton:hover arrow {
+    color: #ffffff;
+}
+
+/* Itens de marcar/desmarcar (mudo, "iniciar com o sistema" e afins).
+   Mesma regra: o unset apaga inclusive o desenho do check. */
+popover.menu modelbutton check,
+popover.menu modelbutton radio {
+    min-width: 12px;
+    min-height: 12px;
+    margin-right: 9px;
+    border: 1px solid #3d3d3d;
+    transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+popover.menu modelbutton check {
+    border-radius: 3px;
+}
+
+popover.menu modelbutton radio {
+    border-radius: 50%;
+}
+
+popover.menu modelbutton check:checked,
+popover.menu modelbutton radio:checked {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+}
+
+popover.menu modelbutton check:checked {
+    -gtk-icon-source: -gtk-icontheme("object-select-symbolic");
+}
+
+/* Ícone que alguns apps mandam junto do rótulo. */
+popover.menu modelbutton image {
+    margin-right: 9px;
+    -gtk-icon-size: 16px;
+}
+
+/* Menu comprido vira scroll; a barra dele só suja a caixa. */
+popover.menu scrollbar {
+    opacity: 0;
+    min-width: 0;
 }

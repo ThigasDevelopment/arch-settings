@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Instala APENAS o que estes dotfiles precisam para funcionar.
 #
-# Fora de escopo de propósito: bootloader, kernel, microcode e
+# Fora de escopo de propósito: bootloader, drivers de GPU, kernel, microcode e
 # seus apps pessoais. Isso é decisão do seu sistema, não do tema.
 #
 # Alguns binds herdados apontam para apps que este script NÃO instala
@@ -38,7 +38,7 @@ esac
 # ---------------------------------------------------------------- repo oficial
 PKGS=(
   # compositor e sessão
-  hyprland hyprpaper polkit mesa
+  hyprland hyprpaper polkit
   xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
 
   # apps que o tema veste
@@ -57,7 +57,7 @@ PKGS=(
   zsh zsh-autosuggestions zsh-syntax-highlighting starship fzf
 
   # áudio: a barra lê volume/mídia daqui
-  pipewire pipewire-pulse pipewire-alsa wireplumber playerctl
+  pipewire pipewire-pulse pipewire-alsa wireplumber playerctl pavucontrol
 
   # binds de screenshot (SUPER+SHIFT+S)
   grim slurp wl-clipboard
@@ -85,14 +85,6 @@ AUR=(
   # oficial) e ajuste os quatro pontos: gtk-3.0, gtk-4.0, qt*ct e fonts.conf.
   otf-apple-sf-pro
 
-  # Mixer NATIVO do PipeWire (GTK4 + libadwaita).
-  #
-  # O pavucontrol foi trocado por ele. Nota: o sistema JÁ era PipeWire puro —
-  # não existe daemon pulseaudio instalado. O `libpulse` que o pavucontrol
-  # puxava é só a biblioteca CLIENTE do protocolo PA, atendida pelo
-  # pipewire-pulse. A troca é por afinidade, não por corrigir stack.
-  pwvucontrol
-
   # barra e notificações
   aylurs-gtk-shell-git libastal-meta
 
@@ -114,90 +106,13 @@ AUR=(
   elephant-providerlist
 )
 
-echo "[1/7] Atualizando sistema"
+echo "[1/6] Atualizando sistema"
 sudo pacman -Syu --noconfirm
 
-echo "[2/7] Pacotes oficiais"
+echo "[2/6] Pacotes oficiais"
 sudo pacman -S --needed --noconfirm "${PKGS[@]}"
 
-echo "[3/7] Driver de vídeo"
-# Sem driver o Hyprland NEM INICIA, e o erro não diz "falta driver". Ele diz:
-#
-#   MESA: error: ZINK: vkCreateInstance failed (VK_ERROR_INCOMPATIBLE_DRIVER)
-#   MESA-EGL: warning: egl: failed to create dri2 screen
-#
-# O Mesa cai no Zink (OpenGL sobre Vulkan) quando não acha driver nativo, e
-# aí falta Vulkan também. Por isso isto não é opcional aqui.
-#
-# Pule com:  SKIP_GPU=1 bash install.sh
-if [ "${SKIP_GPU:-0}" = "1" ]; then
-  echo "  SKIP_GPU=1 — pulando."
-else
-  # Detecção pelo /sys: `lspci` vem do pciutils, que não está no base.
-  #
-  # Filtra pela CLASSE PCI 0x03xxxx (display controller). Ler o vendor de
-  # TODOS os dispositivos não serve: quase toda placa-mãe tem chipset Intel
-  # (0x8086) ou AMD (0x1002) em ponte, áudio e USB, e o script acabaria
-  # instalando driver de vídeo do fabricante errado. Testado numa VM com
-  # chipset Intel e GPU virtual: sem o filtro, "detectava Intel".
-  #
-  # Máquina híbrida pode ter duas GPUs de fabricantes diferentes, por isso a
-  # checagem é acumulativa e não if/elif.
-  gpu_pkgs=()
-  has_nvidia=0
-
-  vendors=""
-  for d in /sys/bus/pci/devices/*/; do
-    cls="$(cat "$d/class" 2>/dev/null)" || continue
-    case "$cls" in
-      0x03*) vendors="$vendors $(cat "$d/vendor" 2>/dev/null)" ;;
-    esac
-  done
-
-  if [[ " $vendors " == *" 0x10de "* ]]; then
-    has_nvidia=1
-    echo "  NVIDIA detectada"
-    # nvidia-dkms (proprietário) e não nvidia-open-dkms: o open só cobre
-    # Turing para cima, o proprietário cobre de Maxwell às atuais.
-    gpu_pkgs+=(nvidia-dkms nvidia-utils egl-wayland)
-
-    # Headers do kernel REALMENTE instalado — o DKMS não compila sem eles,
-    # e `linux-headers` não serve para linux-lts/zen/hardened.
-    for k in linux linux-lts linux-zen linux-hardened linux-rt; do
-      pacman -Qq "$k" >/dev/null 2>&1 && gpu_pkgs+=("$k-headers")
-    done
-  fi
-
-  if [[ " $vendors " == *" 0x1002 "* ]]; then
-    echo "  AMD detectada"
-    gpu_pkgs+=(vulkan-radeon libva-mesa-driver)
-  fi
-
-  if [[ " $vendors " == *" 0x8086 "* ]]; then
-    echo "  Intel detectada"
-    gpu_pkgs+=(vulkan-intel intel-media-driver)
-  fi
-
-  if [ ${#gpu_pkgs[@]} -eq 0 ]; then
-    echo "  nenhuma GPU conhecida encontrada; seguindo só com o mesa."
-    echo "  Se o Hyprland não subir, o driver é o primeiro lugar a olhar."
-  else
-    sudo pacman -S --needed --noconfirm "${gpu_pkgs[@]}"
-  fi
-
-  # NVIDIA precisa de early KMS para o Wayland. Só mexe se ainda não estiver lá.
-  if [ "$has_nvidia" = "1" ] && ! grep -q 'nvidia_drm' /etc/mkinitcpio.conf; then
-    echo "  habilitando early KMS da NVIDIA no initramfs"
-    sudo cp /etc/mkinitcpio.conf /etc/mkinitcpio.conf.bak
-    sudo sed -i 's/^MODULES=(\(.*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-    sudo sed -i 's/^MODULES=( /MODULES=(/' /etc/mkinitcpio.conf
-    sudo mkinitcpio -P
-    echo "  backup do original em /etc/mkinitcpio.conf.bak"
-    NEEDS_REBOOT=1
-  fi
-fi
-
-echo "[4/7] yay"
+echo "[3/6] yay"
 if ! command -v yay >/dev/null 2>&1; then
   tmp=$(mktemp -d)
   git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
@@ -205,10 +120,10 @@ if ! command -v yay >/dev/null 2>&1; then
   rm -rf "$tmp"
 fi
 
-echo "[5/7] AUR"
+echo "[4/6] AUR"
 yay -S --needed --noconfirm --answerdiff=None --answerclean=None "${AUR[@]}"
 
-echo "[6/7] Ligando os dotfiles"
+echo "[5/6] Ligando os dotfiles"
 # Symlink por diretório. NÃO use `stow --target=~/.config`: o stow espalha o
 # CONTEÚDO do pacote no alvo, então gtk-3.0/gtk.css viraria ~/.config/gtk.css
 # e colidiria com o gtk-4.0. Aqui cada pasta vira ~/.config/<nome>.
@@ -229,7 +144,7 @@ chmod +x "$DOTFILES_DIR/hypr/scripts/"*.sh "$DOTFILES_DIR/scripts/"*.sh
 sed -i "s|^  \"/home/[^\"]*\",|  \"$HOME\",|" "$DOTFILES_DIR/elephant/files.toml"
 echo "  busca de arquivos apontada para $HOME"
 
-echo "[7/7] Pastas de ícones em cinza"
+echo "[6/6] Pastas de ícones em cinza"
 # O Papirus vem com pastas azuis. Em cinza elas ficam legíveis sobre o fundo
 # preto sem introduzir cor — as pretas somem no #0b0b0b.
 for theme in Papirus-Dark Papirus; do
@@ -275,18 +190,6 @@ else
     echo "  sbctl não instalado (deveria ter vindo com este script)."
 fi
 
-if [ "${NEEDS_REBOOT:-0}" = "1" ]; then
-  echo
-  echo "────────────────────────────────────────────────"
-  echo " REINICIE antes de logar no Hyprland."
-  echo " O módulo da NVIDIA foi adicionado ao initramfs e"
-  echo " só entra em vigor no próximo boot. Sem reiniciar,"
-  echo " o compositor falha com erro de EGL."
-  echo "────────────────────────────────────────────────"
-fi
-
 echo "Pronto. Falta à mão:"
-echo "  1. chsh -s /usr/bin/zsh    e depois LOGOUT COMPLETO"
-echo '     (o $SHELL é herdado no login; sem relogar, o kitty abre em'
-echo "      bash e o .zprofile — que sobe o Hyprland no tty1 — é ignorado)"
-echo "  2. Ajustar o monitor em hypr/hyprland.conf se quiser fixar resolução"
+echo "  1. chsh -s /usr/bin/zsh        (o .zprofile sobe o Hyprland no tty1)"
+echo "  2. Ajustar o monitor em hypr/hyprland.lua se quiser fixar resolução"

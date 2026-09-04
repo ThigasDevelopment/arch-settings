@@ -44,7 +44,6 @@ Instale por conta se usar; se não, o bind só não faz nada.
 | Tela-black-dark | **Papirus-Dark**, pastas em cinza | pasta preta some no fundo `#0b0b0b` |
 | hyprpaper (config dele) | hyprpaper + wallpaper próprio | `hyprpaper.conf` reescrito; o dele apontava para `/home/dev/wallpapers` |
 | `stow` | symlink por diretório | ver "stow achata" abaixo |
-| pavucontrol | **pwvucontrol** | mixer nativo do PipeWire (GTK4 + libadwaita) |
 
 ## A paleta inteira
 
@@ -98,7 +97,7 @@ tem headerbar própria usa a dela, tematizada; quem não tem fica sem barra
 Tudo abaixo quebrou de verdade e está corrigido:
 
 **`stow` achata os diretórios.** `stow --target=~/.config hypr` **não** cria
-`~/.config/hypr/hyprland.conf`; joga o conteúdo de `hypr/` direto em
+`~/.config/hypr/hyprland.lua`; joga o conteúdo de `hypr/` direto em
 `~/.config/`. Com `gtk-3.0` e `gtk-4.0` juntos, os dois disputam
 `~/.config/gtk.css` e o stow aborta tudo. Por isso o `install.sh` usa
 `ln -sfn` por diretório.
@@ -166,7 +165,7 @@ primitiva de slider — o provider `wireplumber` do elephant só oferece
 ainda ancora exatamente sob o ícone.
 
 A ligação é nos dois sentidos, com guarda contra laço: arrastar muda o
-sistema, e mudar por fora (tecla de mídia, `pwvucontrol`) move o slider.
+sistema, e mudar por fora (tecla de mídia, `pavucontrol`) move o slider.
 
 ## Fontes
 
@@ -221,30 +220,15 @@ quatro pontos: `gtk-3.0/settings.ini`, `gtk-4.0/settings.ini`, os dois
 
 ## Wallpaper e blur
 
-Wallpaper: a marca do Arch em `#d0d3d4` centralizada sobre `#27292c`, em
-1920×1080.
-
-Gerada a partir do **logo vetorial oficial** do archlinux.org, renderizado a
-4000px e depois reduzido. A primeira versão partia de um PNG de 596×335 e
-esticava — as bordas do logo saíam moles. Vetor não tem esse problema: dá
-para regenerar em qualquer resolução com o mesmo comando.
+Wallpaper: logo do Arch em `#d0d3d4` centralizado sobre `#27292c`, composto em
+1920×1080. A imagem original tinha 596×335; esticada, as bordas do logo
+borravam.
 
 O blur é **leve** (`size 4`, `passes 2`) e as janelas continuam **opacas**
-(`opacity 1.0` no Hyprland). Baixar a opacidade da janela inteira lavaria o
-texto junto.
-
-Quem carrega a translucidez é **cada app, no próprio fundo**:
-
-- kitty → `background_opacity 0.85`
-- Nautilus e apps GTK → alpha nas superfícies base do `gtk-3.0/gtk.css` e
-  `gtk-4.0/gtk.css`
-- barra e Walker → `rgba()` nos seus CSS
-
-Assim o fundo deixa o blur passar e o texto continua opaco. Firefox e
-Electron pintam o próprio fundo e ignoram o CSS do GTK — esses não borram.
-
-`vibrancy = 0` porque ela reintroduz saturação de cor, que é exatamente o que
-este tema não quer.
+(`opacity 1.0`). Baixar a opacidade da janela inteira lavaria o texto junto —
+o blur aparece através do que é translúcido por conta própria: o fundo do
+kitty (`background_opacity 0.85`), a barra e o Walker. `vibrancy = 0` porque
+ela reintroduz saturação de cor.
 
 ## Secure Boot
 
@@ -260,95 +244,6 @@ O kernel do Arch traz `CONFIG_LOCK_DOWN_KERNEL_FORCE_NONE=y` e não define
 Secure Boot. Por isso o **NVIDIA DKMS continua carregando**, diferente do
 Ubuntu/Fedora.
 
-## Se algo não subir
-
-Tudo abaixo aconteceu numa instalação real e o erro **não diz** qual é a causa.
-
-### Hyprland fecha sozinho logo depois do logo
-
-```
-MESA: error: ZINK: vkCreateInstance failed (VK_ERROR_INCOMPATIBLE_DRIVER)
-MESA-EGL: warning: egl: failed to create dri2 screen
-Hyprland exit cleanly
-```
-
-**Falta driver de vídeo.** O Mesa não achou driver nativo, caiu no Zink
-(OpenGL sobre Vulkan), e Vulkan também não tinha driver. Sem EGL o compositor
-não renderiza.
-
-O `install.sh` **detecta a GPU e instala o driver certo** — NVIDIA, AMD ou
-Intel — no passo `[3/7]`. Se você chegou nesse erro, ou pulou com
-`SKIP_GPU=1`, ou é uma GPU que ele não reconheceu.
-
-Detalhes de como ele decide:
-
-- **Filtra por classe PCI `0x03xxxx`** (display controller), não pelo vendor
-  de todos os dispositivos. Quase toda placa-mãe tem chipset Intel ou AMD em
-  ponte, áudio e USB — sem o filtro, o script instalaria driver de vídeo do
-  fabricante errado.
-- **NVIDIA:** `nvidia-dkms`, não `nvidia-open-dkms`. O open só cobre Turing
-  para cima; o proprietário cobre de Maxwell às atuais.
-- **Headers do kernel que você realmente usa.** `linux-headers` não serve
-  para `linux-lts`/`zen`/`hardened`, e sem eles o DKMS não compila.
-- **Early KMS:** em NVIDIA ele adiciona os módulos ao `mkinitcpio.conf`
-  (backup em `.bak`) e regenera o initramfs. Isso **exige reboot** — o script
-  avisa no final.
-- Máquina híbrida com duas GPUs recebe os dois conjuntos.
-
-Depois do reboot, em NVIDIA:
-
-```bash
-cat /sys/module/nvidia_drm/parameters/modeset   # tem que dar Y
-```
-
-### O kitty abre em bash, e o Hyprland não sobe sozinho no tty1
-
-O `$SHELL` é herdado no login. Se a sessão começou antes do
-`chsh -s /usr/bin/zsh`, tudo continua em bash — e o `.zprofile`, que é quem
-sobe o Hyprland no tty1, é ignorado (bash lê `.bash_profile`).
-
-```bash
-getent passwd $USER | cut -d: -f7   # o que está registrado
-echo $SHELL                         # o que a sessão herdou
-```
-
-Divergiu? **Logout completo** — fechar o terminal não basta.
-
-O `kitty.conf` já traz `shell /usr/bin/zsh` fixo justamente para o terminal
-não depender disso.
-
-### `sbctl status` diz "sbctl is not installed"
-
-Falso alarme. Isso **não** é sobre o pacote — é jargão do sbctl para "minhas
-chaves ainda não estão enroladas no firmware". A linha que importa é
-`Setup Mode`.
-
-### Secure Boot com Unified Kernel Image
-
-Se o `archinstall` montou o boot com UKI, o artefato bootável é um único
-`/boot/EFI/Linux/*.efi` — não existe `vmlinuz` separado para assinar. O
-`scripts/secure-boot.sh` usa `sbctl verify` para descobrir o que está sem
-assinatura, então cobre UKI, systemd-boot e GRUB igualmente.
-
-Uma lista fixa de caminhos passaria batido pelo UKI, terminaria "com sucesso",
-e você ligaria o Secure Boot numa máquina que não boota.
-
-**Ordem correta, sempre:** assinar primeiro, ligar o Secure Boot na BIOS
-depois. Na ASUS o toggle é `OS Type: Windows UEFI Mode`.
-
-### Um app não pega o blur
-
-O blur do Hyprland só atravessa o que é **translúcido**. App que pinta fundo
-opaco tapa o efeito.
-
-Os temas GTK3 e GTK4 daqui já colocam alpha nas superfícies base, então
-Nautilus e afins funcionam. Firefox e Electron pintam o próprio fundo e
-ignoram o CSS do GTK — esses não vão borrar sem hack por app.
-
-Note que só o **fundo** é translúcido: texto e ícones pintam por cima e
-continuam opacos. É o oposto de baixar a opacidade da janela inteira no
-Hyprland, que lavaria o texto junto.
-
 ## Instalação
 
 ```bash
@@ -357,9 +252,8 @@ cd ~/Documents/Projects/linux
 ./install.sh
 ```
 
-O script instala **o que os dotfiles precisam**, incluindo o driver de vídeo
-(detectado automaticamente — NVIDIA, AMD ou Intel; pule com `SKIP_GPU=1`).
-Bootloader, kernel e microcode continuam sendo decisão do seu sistema —
+O script instala **apenas o que os dotfiles precisam**.
+Bootloader, kernel, microcode e driver de GPU são decisão do seu sistema —
 fora de escopo.
 
 **Rodando de um pendrive:** o script **recusa** rodar de fora do seu `$HOME`
@@ -373,7 +267,7 @@ deixaria você editando o pendrive enquanto o sistema lê outro lugar.
 Depois, à mão:
 
 1. `chsh -s /usr/bin/zsh`
-2. Ajustar o monitor em `hypr/hyprland.conf` se quiser fixar resolução
+2. Ajustar o monitor em `hypr/hyprland.lua` se quiser fixar resolução
 3. Firefox → `about:config` → `widget.use-xdg-desktop-portal.file-picker = true`
 
 ## Verificar
@@ -394,7 +288,7 @@ walker                    # SUPER + Space
 ## Estrutura
 
 ```
-hypr/          hyprland.conf, hyprpaper.conf, wallpapers/, scripts/power-menu.sh
+hypr/          hyprland.lua, hyprpaper.conf, wallpapers/, scripts/power-menu.sh
 ags/           app.ts, style.css, widget/Bar.tsx, widget/Notifications.tsx
 walker/        config.toml, themes/mono/ (launcher), themes/power/ (menu de energia)
 elephant/      files.toml — onde o launcher procura arquivos

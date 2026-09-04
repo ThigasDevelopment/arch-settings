@@ -12,5 +12,9 @@ if [ "$(tty)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ]; then
   export XDG_CURRENT_DESKTOP=Hyprland
   export XDG_SESSION_TYPE=wayland
   export XDG_SESSION_DESKTOP=Hyprland
-  exec Hyprland
+  # start-hyprland, nao `Hyprland` direto: ele e o watchdog oficial do
+  # pacote (mesmo binario que /usr/share/wayland-sessions/hyprland.desktop
+  # chama). Subir o compositor sem ele faz o Hyprland logar, em vermelho,
+  # "WARNING: Hyprland is being launched without start-hyprland."
+  exec start-hyprland
 fi
