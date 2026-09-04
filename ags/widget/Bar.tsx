@@ -35,37 +35,138 @@ const spawnEmpty = (cmd: string) =>
 // janelas. Uma régua fixa dá posição estável para o olho.
 const WORKSPACES = [1, 2, 3, 4, 5]
 
-function Workspaces() {
+// Um botão da régua. Extraído porque agora ele nasce de duas origens: a régua
+// fixa de 1 a 5 e as workspaces que existem fora dela.
+function WsButton({ id }: { id: number }) {
     const hypr = AstalHyprland.get_default()
     const focused = createBinding(hypr, "focusedWorkspace")
     const existing = createBinding(hypr, "workspaces")
 
     return (
+        <button
+            /* valign CENTER + heightRequest fixo: sem isto o GTK
+               estica o botão para preencher a altura da barra
+               (valign padrão é FILL), a margem do CSS é engolida e a
+               pílula sai cortada em cima e embaixo. */
+            valign={Gtk.Align.CENTER}
+            heightRequest={22}
+            class={createComputed([focused, existing], (f, all) => {
+                if (f?.id === id) return "ws active"
+                // "ocupada" = já existe no compositor, ou seja, tem janela
+                return all.some((w) => w.id === id) ? "ws occupied" : "ws"
+            })}
+            tooltipText={createComputed([existing], (all) => {
+                const ws = all.find((w) => w.id === id)
+                const n = ws?.clients?.length ?? 0
+                if (n === 0) return `Área ${id}  ·  vazia`
+                return `Área ${id}  ·  ${n} ${n === 1 ? "janela" : "janelas"}`
+            })}
+            onClicked={() => dispatch(`hl.dsp.focus({ workspace = ${id} })`)}
+        >
+            <label label={`${id}`} />
+        </button>
+    )
+}
+
+// A special "magic" (SUPER+M no hyprland.lua) não cabe na régua numérica
+// porque ela não é uma posição — é uma gaveta que se sobrepõe à workspace
+// atual.
+//
+// E ela exige um caminho próprio por um detalhe do Hyprland: com a magic
+// aberta sobre a área 1, `focusedWorkspace` CONTINUA dizendo 1. Medido com
+// hyprctl. Quem sabe se ela está na tela é o campo specialWorkspace do
+// MONITOR, não a workspace em foco.
+function Magic({ monitor }: { monitor: AstalHyprland.Monitor }) {
+    const hypr = AstalHyprland.get_default()
+
+    const state = createComputed(
+        [createBinding(monitor, "specialWorkspace"), createBinding(hypr, "workspaces")],
+        (sp, all) => {
+            // Sem special na tela o Hyprland reporta id 0, não nulo — daí o
+            // teste ser `< 0` e não uma checagem de existência.
+            if (sp && sp.id < 0) return "aberta"
+
+            // Fora da tela, mas com janelas dentro: vale marcar, senão você
+            // esquece o que guardou lá e não há nada na barra que lembre.
+            const guardadas = all
+                .filter((w) => w.id < 0)
+                .reduce((n, w) => n + (w.clients?.length ?? 0), 0)
+
+            return guardadas > 0 ? "guardada" : "vazia"
+        },
+    )
+
+    return (
+        <button
+            /* Some quando a gaveta está vazia: a régua de 1 a 5 é o estado
+               normal, e um ícone permanente para o que não existe só ocupa
+               espaço e treina o olho a ignorá-lo. */
+            visible={state((s: string) => s !== "vazia")}
+            valign={Gtk.Align.CENTER}
+            heightRequest={22}
+            class={state((s: string) => (s === "aberta" ? "ws magic active" : "ws magic occupied"))}
+            tooltipText={state((s: string) =>
+                s === "aberta"
+                    ? "Magic  ·  na tela agora  ·  clique para esconder"
+                    : "Magic  ·  guardada com janelas  ·  clique para mostrar",
+            )}
+            onClicked={() => dispatch('hl.dsp.workspace.toggle_special("magic")')}
+        >
+            <label label={ICON.magic} />
+        </button>
+    )
+}
+
+function Workspaces() {
+    const hypr = AstalHyprland.get_default()
+    const focused = createBinding(hypr, "focusedWorkspace")
+    const existing = createBinding(hypr, "workspaces")
+
+    // Workspaces fora da régua fixa, em ordem, sempre depois do 5.
+    //
+    // O critério é "existe no compositor", não "está em foco": focar a 7 já a
+    // cria, então isso cobre o caso pedido, e cobre também a 9 que ficou com
+    // uma janela dentro depois que você saiu dela — que sumiria da barra e
+    // viraria uma janela inalcançável pelo mouse.
+    //
+    // A workspace em foco entra à força porque `workspaces` e
+    // `focusedWorkspace` são duas ligações independentes: nada garante que as
+    // duas cheguem no mesmo quadro, e por um instante a atual poderia não
+    // estar na lista.
+    //
+    // id < 0 fica de fora: é special, e o Magic cuida dela.
+    const extras = createComputed([existing, focused], (all, f) => {
+        const ids = all
+            .filter((w) => w.id > 0 && !WORKSPACES.includes(w.id))
+            .map((w) => w.id)
+
+        if (f && f.id > 0 && !WORKSPACES.includes(f.id) && !ids.includes(f.id)) {
+            ids.push(f.id)
+        }
+
+        return ids.sort((a, b) => a - b)
+    })
+
+    return (
         <box class="workspaces" valign={Gtk.Align.CENTER}>
             {WORKSPACES.map((id) => (
-                <button
-                    /* valign CENTER + heightRequest fixo: sem isto o GTK
-                       estica o botão para preencher a altura da barra
-                       (valign padrão é FILL), a margem do CSS é engolida e a
-                       pílula sai cortada em cima e embaixo. */
-                    valign={Gtk.Align.CENTER}
-                    heightRequest={22}
-                    class={createComputed([focused, existing], (f, all) => {
-                        if (f?.id === id) return "ws active"
-                        // "ocupada" = já existe no compositor, ou seja, tem janela
-                        return all.some((w) => w.id === id) ? "ws occupied" : "ws"
-                    })}
-                    tooltipText={createComputed([existing], (all) => {
-                        const ws = all.find((w) => w.id === id)
-                        const n = ws?.clients?.length ?? 0
-                        if (n === 0) return `Área ${id}  ·  vazia`
-                        return `Área ${id}  ·  ${n} ${n === 1 ? "janela" : "janelas"}`
-                    })}
-                    onClicked={() => dispatch(`hl.dsp.focus({ workspace = ${id} })`)}
-                >
-                    <label label={`${id}`} />
-                </button>
+                <WsButton id={id} />
             ))}
+
+            {/* Caixa própria para o <For>: ele anexa os itens ao pai conforme
+                chegam, então solto entre irmãos empurraria os extras para
+                depois do indicador da magic. */}
+            <box valign={Gtk.Align.CENTER}>
+                <For each={extras}>{(id: number) => <WsButton id={id} />}</For>
+            </box>
+
+            {/* `With` porque a ligação é aninhada: primeiro muda o monitor em
+                foco, e só então a special DESSE monitor. */}
+            <With value={createBinding(hypr, "focusedMonitor")}>
+                {(mon: AstalHyprland.Monitor | null) =>
+                    mon ? <Magic monitor={mon} /> : <box />
+                }
+            </With>
         </box>
     )
 }
@@ -268,6 +369,7 @@ const ICON = {
     volMed: "\u{F0580}",
     volHigh: "\u{F057E}",
     clock: "\u{F0954}",
+    magic: "\u{F0068}",
     power: "\u{23FB}",
 }
 

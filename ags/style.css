@@ -123,6 +123,12 @@ centerbox {
     color: #8a8a8a;
 }
 
+/* O glifo da magic precisa de corpo maior que um dígito para ler como
+   ícone. No label, não no botão — ver a armadilha no topo do arquivo. */
+.workspaces button.magic label {
+    font-size: 13px;
+}
+
 .workspaces button.ws.active {
     color: #000000;
     background: #ffffff;
