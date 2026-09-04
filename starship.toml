@@ -1,5 +1,15 @@
-# mono — prompt sem cor. Hierarquia por peso e por símbolo.
+# mono — hierarquia por peso e por símbolo.
 # Duas linhas: contexto em cima, cursor embaixo, sempre na mesma coluna.
+#
+# A cor entra APENAS nos três ícones de ferramenta (git, node, python), na cor
+# de marca de cada uma. O resto segue sem cor. Isso é deliberado e é a única
+# exceção: o tema do kitty tem as 16 cores ANSI achatadas em cinza, então esses
+# glifos são a única cor da tela e funcionam como acento, não como decoração.
+#
+# Para voltar ao mono puro, troque as três cores de marca abaixo por cinza:
+#   (#f05033) -> (#8a8a8a)      git
+#   (#8cc84b) -> (#6e6e6e)      node
+#   (#4b8bbe) -> (#6e6e6e)      python
 
 add_newline = true
 format = """
@@ -26,9 +36,11 @@ read_only          = " ro"
 read_only_style    = "#3d3d3d"
 
 [git_branch]
+# U+E725 nf-dev-git_branch. Colorido só o glifo: o nome do branch continua
+# no cinza de antes, para o ícone marcar a linha sem roubar a leitura.
 style  = "#8a8a8a"
-symbol = ""
-format = "[$branch]($style) "
+symbol = " "
+format = "[$symbol](#f05033)[$branch]($style) "
 
 [git_status]
 style     = "#3d3d3d"
@@ -45,14 +57,16 @@ renamed    = "»"
 deleted    = "x"
 
 [nodejs]
+# U+E718 nf-dev-nodejs_small — o hexágono do Node, no verde da marca.
 style  = "#3d3d3d"
-symbol = "node "
-format = "[$symbol$version]($style) "
+symbol = " "
+format = "[$symbol](#8cc84b)[$version]($style) "
 
 [python]
+# U+E73C nf-dev-python, no azul da marca.
 style  = "#3d3d3d"
-symbol = "py "
-format = "[$symbol$version]($style) "
+symbol = " "
+format = "[$symbol](#4b8bbe)[$version]($style) "
 
 # Horário à esquerda do diretório, em cinza baixo: prefixa a linha como
 # um carimbo de log, sem competir com o caminho.
