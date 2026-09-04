@@ -42,6 +42,21 @@ const isPath = (s: string) => s.startsWith("/") || s.startsWith("file://")
 function Notification({ n }: { n: AstalNotifd.Notification }) {
     const actions = n.get_actions()
 
+    // O que vira BOTÃO é um subconjunto do que o app manda.
+    //
+    // A ação "default" não é um botão: pelo protocolo freedesktop ela é o que
+    // acontece ao ativar o CORPO da notificação, e já está ligada no gesto de
+    // clique abaixo. Os apps mandam o rótulo dela vazio justamente porque não
+    // esperam que seja desenhada — o Claude Code manda [["default", ""]], e era
+    // daí que saía aquele botão em branco ocupando uma linha inteira.
+    //
+    // O teste de rótulo vazio é a rede de segurança para o caso geral: botão
+    // sem texto não é acionável de forma útil, qualquer que seja o id.
+    //
+    // `actions` continua cru de propósito — é ele que o clique no corpo
+    // consulta para saber se existe uma "default" a invocar.
+    const buttons = actions.filter((a) => a.id !== "default" && a.label)
+
     // O app pode pedir um tempo próprio; só caímos no nosso default quando
     // ele não pede nada. Respeitar isso é metade do "padrão".
     const life = n.expireTimeout > 0 ? n.expireTimeout : (LIFETIME[n.urgency] ?? 6000)
@@ -74,11 +89,33 @@ function Notification({ n }: { n: AstalNotifd.Notification }) {
         // senão apenas descarta. Antes não havia jeito nenhum de tirar uma
         // notificação da tela além de esperar.
         const click = new Gtk.GestureClick({ button: Gdk.BUTTON_PRIMARY })
-        click.connect("pressed", () => {
+
+        click.connect("pressed", (_gesto, _n, x: number, y: number) => {
+            // Se o aperto caiu num botão de ação, o dono do clique é ELE, não
+            // o card — e este gesto tem que sair de cena.
+            //
+            // Sem esta guarda, um clique único dispara duas ações: o `pressed`
+            // do card manda a "default" já no aperto, e o botão manda a dele
+            // no soltar. Pior: a "default" descarta a notificação no meio do
+            // caminho. Medido no barramento com um clique real em "Fiz café":
+            //   ActionInvoked (3, 'default')
+            //   NotificationClosed (3, 3)
+            //   ActionInvoked (3, 'cafe')
+            //
+            // `pick` resolve pelas coordenadas do evento em vez de confiar na
+            // propagação de gestos, que aqui não ajuda: o botão só reage no
+            // release, então no aperto não há nada para ele reivindicar.
+            let alvo: Gtk.Widget | null = self.pick(x, y, Gtk.PickFlags.DEFAULT)
+            while (alvo && alvo !== self) {
+                if (alvo instanceof Gtk.Button) return
+                alvo = alvo.get_parent()
+            }
+
             disarm()
             if (actions.some((a) => a.id === "default")) n.invoke("default")
             else n.dismiss()
         })
+
         self.add_controller(click)
 
         self.connect("destroy", disarm)
@@ -157,9 +194,9 @@ function Notification({ n }: { n: AstalNotifd.Notification }) {
                 </box>
             </box>
 
-            {actions.length > 0 ? (
+            {buttons.length > 0 ? (
                 <box class="actions">
-                    {actions.map((action) => (
+                    {buttons.map((action) => (
                         <button hexpand onClicked={() => n.invoke(action.id)}>
                             <label label={action.label} />
                         </button>
