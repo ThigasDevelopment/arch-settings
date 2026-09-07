@@ -5,7 +5,6 @@ import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
 import GLib from "gi://GLib"
 import AstalHyprland from "gi://AstalHyprland"
-import AstalMpris from "gi://AstalMpris"
 import AstalWp from "gi://AstalWp"
 import AstalNetwork from "gi://AstalNetwork"
 import AstalTray from "gi://AstalTray"
@@ -228,29 +227,6 @@ function Clock() {
 /* ----------------------------------------------------------------- right */
 
 // Player fixo no Spotify, como o spotify-status.sh fazia com playerctl -p.
-function Media({ player, visible }: { player: AstalMpris.Player; visible: any }) {
-    const title = createComputed(
-        [createBinding(player, "artist"), createBinding(player, "title")],
-        (artist, name) => (artist ? `${artist} — ${name}` : (name ?? "")),
-    )
-
-    return (
-        <box class="media" visible={visible}>
-            <button class="mediaStep" onClicked={() => player.previous()}>
-                <label label="‹" />
-            </button>
-
-            <button class="mediaTitle" onClicked={() => player.play_pause()}>
-                <label maxWidthChars={28} ellipsize={3} label={title} />
-            </button>
-
-            <button class="mediaStep" onClicked={() => player.next()}>
-                <label label="›" />
-            </button>
-        </box>
-    )
-}
-
 // Título da janela em foco.
 //
 // Ele existe aqui porque não existe em mais lugar nenhum: descartamos o
@@ -259,12 +235,12 @@ function Media({ player, visible }: { player: AstalMpris.Player; visible: any })
 //
 // Cinza secundário, não branco: o branco deste tema é do marcador de foco e
 // do relógio. Um título branco competiria com os dois.
-function WindowTitle({ visible }: { visible: any }) {
+function WindowTitle() {
     const hypr = AstalHyprland.get_default()
     const focused = createBinding(hypr, "focusedClient")
 
     return (
-        <box class="windowTitle" visible={visible}>
+        <box class="windowTitle">
             {/* `With` porque a ligação é aninhada: primeiro o cliente em foco
                 muda, depois o título DESSE cliente muda. Um createBinding
                 simples só pegaria a troca de janela, não o título mudando
@@ -295,13 +271,18 @@ function WindowTitle({ visible }: { visible: any }) {
 // Os dois respondem à mesma pergunta — "o que estou fazendo agora" — e nunca
 // precisam aparecer juntos.
 function Center() {
-    const spotify = AstalMpris.Player.new("spotify")
-    const playing = createBinding(spotify, "available")
-
+    // Só o título da janela.
+    //
+    // Aqui já morou um widget de mídia que tomava este espaço enquanto algo
+    // tocava. Saiu porque o custo era alto demais: sem hyprbars e sem
+    // decoração nos apps Qt, a barra é o ÚNICO lugar onde o título existe — e
+    // com música tocando, duas janelas do mesmo app viravam indistinguíveis.
+    //
+    // As teclas de mídia seguem funcionando e são independentes disto: o
+    // playerctl controla qualquer player, com ou sem widget na barra.
     return (
         <box>
-            <Media player={spotify} visible={playing} />
-            <WindowTitle visible={playing((p) => !p)} />
+            <WindowTitle />
         </box>
     )
 }
