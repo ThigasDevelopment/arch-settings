@@ -1,0 +1,94 @@
+/* network — menu de rede do Walker.
+
+   Cópia do tema `power`, com a caixa dimensionada para três itens em vez de
+   quatro e mais larga, porque a linha do IP é bem mais longa que "Desligar".
+   O resto — cores, pílula do item, barra branca de seleção — é idêntico de
+   propósito: os dois menus saem do mesmo canto da barra e precisam ler como
+   a mesma coisa.
+
+   Herdado do power: */
+/* power — menu de energia do Walker.
+   Caixa pequena ancorada no canto superior direito, logo abaixo do ícone
+   de power da barra. Sem campo de busca (o script chama com --nosearch):
+   são quatro opções fixas, não há o que pesquisar. */
+
+@define-color window_bg_color #0b0b0b;
+@define-color accent_bg_color #ffffff;
+@define-color theme_fg_color  #c8c8c8;
+
+/* Texto em SF Pro; ícones caem na JetBrains Mono por fallback. */
+* {
+  all: unset;
+  font-family: "SF Pro Text", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+}
+
+scrollbar { opacity: 0; }
+
+/* margin-top alinha a caixa com a base da barra (30px) mais um respiro;
+   margin-right alinha a borda direita com o padding da barra. */
+.box-wrapper {
+  background: rgba(11, 11, 11, 0.78);
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 4px 0;
+  margin-top: 36px;
+  margin-right: 8px;
+}
+
+/* O input continua no XML do layout, mas é ocultado pelo --nosearch.
+   Zerado aqui para não sobrar espaço reservado. */
+.search-container,
+.input {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.content-container { padding: 0; }
+.list { background: transparent; }
+
+.item-box {
+  padding: 7px 12px;
+  margin: 0 4px;
+  border-radius: 4px;
+}
+
+/* Seleção: preenchimento, não barra.
+
+   A barra branca de 2px continua existindo no tema, mas só onde marca ESTADO
+   FIXO — a saída de áudio padrão, a notificação crítica. Para o item sob o
+   cursor ela era exagero: um traço de alarme para dizer "seu dedo está aqui".
+
+   O preenchimento é branco a 7% e não um cinza fixo de propósito. Estas caixas
+   são translúcidas com blur atrás, então o que está por baixo muda de brilho o
+   tempo todo; um #141414 chapado some sobre conteúdo claro. Uma camada de
+   branco clareia o que quer que esteja lá, e o realce fica igual em qualquer
+   fundo. */
+child:selected .item-box,
+row:selected .item-box {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Passar o mouse é um degrau abaixo da seleção: metade da força. */
+.item-box:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.item-text { color: #c8c8c8; }
+child:selected .item-text { color: #ffffff; font-weight: 600; }
+
+.item-subtext,
+.item-quick-activation,
+.keybinds,
+.preview {
+  /* sem subtítulo, sem dica de atalho, sem preview: quatro linhas e pronto */
+  opacity: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.placeholder { color: #3d3d3d; }
