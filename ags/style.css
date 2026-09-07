@@ -210,6 +210,34 @@ centerbox {
     color: #ffffff;
 }
 
+/* ------------------------------------------------- bateria de periférico */
+
+/* Mesmo respiro e mesmo hover das métricas.
+   O hover aqui não promete clique, promete CONTEÚDO — e entrega: é ele que
+   revela o tooltip com a lista de todos os aparelhos. Sem ele, nada na barra
+   sugeria que existe mais de uma bateria por trás daquele número. */
+.bateria {
+    padding: 0 7px;
+    border-radius: 4px;
+    transition: background-color 160ms ease;
+}
+
+.bateria:hover {
+    background: #141414;
+}
+
+.bateria:hover .metricIcon,
+.bateria:hover .metricValue {
+    color: #ffffff;
+}
+
+/* Abaixo de 20% tudo vai para o branco — a cor mais escassa do tema, e a
+   única forma de alarme que sobra num esquema sem cor. */
+.bateria.baixa .metricIcon,
+.bateria.baixa .metricValue {
+    color: #ffffff;
+}
+
 /* ---------------------------------------------------------------- tray */
 
 .tray {
@@ -433,6 +461,96 @@ tooltip label {
     padding: 0 10px;
 }
 
+/* ------------------------------------------------------ calendário do relógio */
+
+/* O GtkCalendar chega aqui completamente pelado: o `* { all: unset }` do topo
+   apaga padding, hover, e até o -gtk-icon-source das setas de mês. Tudo
+   abaixo é reconstrução, não ajuste. */
+
+.calendarPopover > contents {
+    padding: 10px 12px 12px 12px;
+}
+
+calendar {
+    color: #c8c8c8;
+}
+
+calendar > header {
+    margin-bottom: 8px;
+}
+
+/* Mês e ano: o único texto branco da caixa, porque é o que diz onde você está
+   quando navegou para longe. */
+calendar > header label {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+calendar > header button {
+    color: #5a5a5a;
+    min-width: 22px;
+    min-height: 22px;
+    border-radius: 4px;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+calendar > header button:hover {
+    color: #ffffff;
+    background: #141414;
+}
+
+/* As setas são desenhadas por -gtk-icon-source, que o all: unset zera —
+   sem isto os botões de mês ficam invisíveis, clicáveis e vazios. */
+calendar > header button > image {
+    -gtk-icon-size: 14px;
+}
+
+/* Iniciais dos dias da semana: mesmo tratamento dos rótulos de metadado do
+   resto do tema. */
+calendar label.day-name {
+    color: #3d3d3d;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding-bottom: 4px;
+}
+
+calendar label.day-number {
+    color: #c8c8c8;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-feature-settings: "tnum";
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+calendar label.day-number:hover {
+    background: #141414;
+    color: #ffffff;
+}
+
+/* Dias do mês vizinho existem para completar a grade, não para serem lidos. */
+calendar label.day-number.other-month {
+    color: #2a2a2a;
+}
+
+/* Hoje é a pílula branca, igual à workspace em foco. Uma só por caixa. */
+calendar label.day-number.today {
+    color: #000000;
+    background: #ffffff;
+    font-weight: 700;
+}
+
+calendar label.day-number:selected {
+    background: #262626;
+    color: #ffffff;
+}
+
+/* A seleção não pode roubar a marca de hoje: se o dia selecionado É hoje, a
+   pílula branca vence. */
+calendar label.day-number.today:selected {
+    color: #000000;
+    background: #ffffff;
+}
+
 /* --------------------------------------------------------- popover de volume */
 
 popover > contents,
@@ -613,17 +731,23 @@ popover.menu modelbutton {
     margin: 0 4px;
     min-height: 0;
     border-radius: 4px;
-    border-left: 2px solid transparent;
     transition: color 160ms ease, background-color 160ms ease;
 }
 
-/* Sem font-weight no hover de propósito: a largura do popover é medida no
+/* Preenchimento, não a barra branca à esquerda — mesma regra dos painéis do
+   Walker: a barra fica reservada para estado fixo (a saída padrão, a
+   notificação crítica), não para dizer onde o cursor está.
+
+   Branco a 7% em vez de um cinza chapado porque este popover é translúcido
+   com blur atrás: sobre conteúdo claro um #141414 desaparece, e uma camada de
+   branco clareia o que quer que esteja embaixo.
+
+   Sem font-weight no hover de propósito: a largura do popover é medida no
    estado de repouso, então engrossar a fonte só faria o rótulo passar a
    caber por pouco e virar reticências ao passar o mouse. */
 popover.menu modelbutton:hover {
     color: #ffffff;
-    background: #141414;
-    border-left-color: #ffffff;
+    background: rgba(255, 255, 255, 0.07);
 }
 
 popover.menu modelbutton:disabled {

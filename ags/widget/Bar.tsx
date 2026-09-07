@@ -181,11 +181,35 @@ function Clock() {
         GLib.DateTime.new_now_local().format("%A, %d de %B de %Y") ?? "",
     )
 
+    // Popover com Gtk.Calendar, e não um menu do Walker: o Walker é um
+    // renderizador de LISTA, e uma grade de sete colunas por seis linhas não é
+    // lista — mesmo motivo já documentado aqui para o slider de volume. O
+    // popover, por outro lado, já é padrão desta barra.
+    //
+    // Volta para o mês corrente toda vez que abre. Sem isso, quem navegou até
+    // março reabre em março três dias depois e lê a data errada.
+    const hoje = (cal: Gtk.Calendar) => {
+        const agora = GLib.DateTime.new_now_local()
+        cal.select_day(agora)
+    }
+
     return (
-        <box class="clock" tooltipText={today}>
-            <label class="metricIcon" label={ICON.clock} />
-            <label class="clockValue" label={now} />
-        </box>
+        <menubutton class="clock" tooltipText={today}>
+            <box>
+                <label class="metricIcon" label={ICON.clock} />
+                <label class="clockValue" label={now} />
+            </box>
+
+            <popover
+                class="calendarPopover"
+                $={(self) => self.connect("show", () => {
+                    const cal = self.get_child() as Gtk.Calendar | null
+                    if (cal) hoje(cal)
+                })}
+            >
+                <Gtk.Calendar $={hoje} />
+            </popover>
+        </menubutton>
     )
 }
 
@@ -370,7 +394,139 @@ const ICON = {
     volHigh: "\u{F057E}",
     clock: "\u{F0954}",
     magic: "\u{F0068}",
+    batAlert: "\u{F0083}",
+    batLow: "\u{F007A}",
+    batMid: "\u{F007E}",
+    batFull: "\u{F0079}",
+    batCharging: "\u{F0084}",
     power: "\u{23FB}",
+}
+
+/* --------------------------------------------------- bateria de periférico */
+
+const PSU = "/sys/class/power_supply"
+
+// Leitor tolerante. O readFile lá em cima usa file_get_contents cru, que LANÇA
+// quando o arquivo não existe — serve lá porque aqueles caminhos sempre
+// existem. Aqui, ausência é normal: nem todo power_supply tem model_name, e o
+// diretório inteiro some quando o aparelho desliga.
+function readOpt(path: string): string {
+    try {
+        const [ok, data] = GLib.file_get_contents(path)
+        return ok ? new TextDecoder().decode(data).trim() : ""
+    } catch {
+        return ""
+    }
+}
+
+type Periferico = { nome: string; nivel: number; carregando: boolean }
+
+// Varre o sysfs a cada leitura em vez de fixar "hidpp_battery_0": o número no
+// nome muda quando o aparelho reconecta, e o diretório some quando ele
+// desliga. Fixar o caminho daria uma métrica que morre no primeiro reconnect.
+//
+// Vai direto ao sysfs em vez de usar o AstalBattery porque o AstalBattery fala
+// com o UPower, e o serviço do UPower está inativo nesta máquina. É o mesmo
+// dado, sem depender de serviço nenhum.
+// Devolve TODOS os periféricos, não o primeiro que aparecer. Mouse, teclado e
+// headset sem fio convivem numa mesma máquina, e a versão anterior mostrava
+// só um deles — o que a ordem de leitura do diretório entregasse primeiro.
+function lerPerifericos(): Periferico[] {
+    let dir: GLib.Dir
+
+    try {
+        dir = GLib.Dir.open(PSU, 0)
+    } catch {
+        return []
+    }
+
+    const achados: Periferico[] = []
+    let entrada: string | null
+
+    while ((entrada = dir.read_name()) !== null) {
+        const base = `${PSU}/${entrada}`
+
+        // scope=Device é o que separa periférico da bateria do próprio
+        // computador (scope=System). Este desktop não tem a segunda, mas um
+        // notebook teria, e ela não pertence a esta métrica.
+        if (readOpt(`${base}/scope`) !== "Device") continue
+
+        const cap = readOpt(`${base}/capacity`)
+        if (cap === "") continue
+
+        const nivel = Number(cap)
+        if (!Number.isFinite(nivel)) continue
+
+        const status = readOpt(`${base}/status`)
+
+        achados.push({
+            nome: readOpt(`${base}/model_name`) || entrada,
+            nivel,
+            carregando: status === "Charging" || status === "Full",
+        })
+    }
+
+    // Menor nível primeiro: é ele que a barra mostra, e é ele que importa.
+    // Um empate cai no nome, só para a ordem não dançar entre leituras.
+    return achados.sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome))
+}
+
+const perifericos = createPoll<Periferico[]>([], 30_000, lerPerifericos)
+
+// Aqui o ícone segue o NÍVEL, e não o "o quê" como nas outras métricas.
+//
+// É quebra deliberada do padrão da barra, e o motivo é a pergunta que cada uma
+// responde: CPU e disco respondem "quanto está X", e você só olha quando quer
+// saber. Esta responde "preciso agir?" — um fone morrendo no meio de uma call
+// é a única leitura da barra que precisa ser notada sem ser lida. Um ícone que
+// esvazia faz isso; um ícone de fone, não.
+//
+// Com vários aparelhos, a barra mostra só o MENOR. Um item por aparelho
+// encheria a barra de números que você não vai ler, e a pergunta continua
+// sendo uma só: "algo está para acabar?". Quem responde "o quê, exatamente" é
+// o tooltip, que lista todos.
+//
+// O hover existe e é honesto: ele não promete clique, promete CONTEÚDO — e
+// entrega, porque é ele que revela a lista completa. Diferente do relógio e da
+// rede antes do conserto, onde o fundo acendia e não havia nada atrás.
+function BateriaPeriferico() {
+    // O que a barra mostra: o mais crítico. A lista já vem ordenada por nível.
+    const alvo = perifericos((lista) => (lista.length > 0 ? lista[0] : null))
+
+    return (
+        <box
+            visible={perifericos((lista) => lista.length > 0)}
+            class={alvo((p) => (p && !p.carregando && p.nivel <= 20 ? "bateria baixa" : "bateria"))}
+            tooltipText={perifericos((lista) => {
+                if (lista.length === 0) return ""
+
+                const linha = (p: Periferico) =>
+                    `${p.nome}  ·  ${p.nivel}%${p.carregando ? "  ·  carregando" : ""}`
+
+                // Um aparelho só: nome e nível bastam, sem cabeçalho.
+                if (lista.length === 1) return linha(lista[0])
+
+                // Vários: o "‹" marca qual deles está aparecendo na barra, para
+                // o número lá fora não ficar órfão de dono.
+                return lista
+                    .map((p, i) => `${linha(p)}${i === 0 ? "  ‹" : ""}`)
+                    .join("\n")
+            })}
+        >
+            <label
+                class="metricIcon"
+                label={alvo((p) => {
+                    if (!p) return ICON.batFull
+                    if (p.carregando) return ICON.batCharging
+                    if (p.nivel <= 15) return ICON.batAlert
+                    if (p.nivel <= 35) return ICON.batLow
+                    if (p.nivel <= 70) return ICON.batMid
+                    return ICON.batFull
+                })}
+            />
+            <label class="metricValue" label={alvo((p) => (p ? `${p.nivel}%` : "--"))} />
+        </box>
+    )
 }
 
 // O tooltip carrega o que o número sozinho não diz: o modelo da CPU, os GiB
@@ -493,15 +649,31 @@ function Network() {
     const tip = createComputed(
         [createBinding(network, "primary"), createBinding(network, "connectivity")],
         (primary, connectivity) => {
-            if (connectivity !== AstalNetwork.Connectivity.FULL) return "Rede offline"
-            return primary === AstalNetwork.Primary.WIFI ? "Wi-Fi conectado" : "Ethernet conectada"
+            const estado =
+                connectivity !== AstalNetwork.Connectivity.FULL
+                    ? "Rede offline"
+                    : primary === AstalNetwork.Primary.WIFI
+                      ? "Wi-Fi conectado"
+                      : "Ethernet conectada"
+
+            return `${estado}\nclique para IP, reconectar e nmtui`
         },
     )
 
+    // <button>, não <box>: até agora isto tinha o :hover do .metric pintando o
+    // fundo e nenhuma ação por trás — prometia clique e não entregava.
     return (
-        <box class="metric netOnly" tooltipText={tip}>
+        <button
+            class="metric netOnly"
+            tooltipText={tip}
+            onClicked={() =>
+                execAsync([
+                    `${GLib.get_home_dir()}/.config/hypr/scripts/network-menu.sh`,
+                ]).catch(() => {})
+            }
+        >
             <label class="metricIcon" label={icon} />
-        </box>
+        </button>
     )
 }
 
@@ -817,6 +989,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                           ]
                         : []}
 
+                    <BateriaPeriferico />
                     <Volume />
 
                     <Divider />

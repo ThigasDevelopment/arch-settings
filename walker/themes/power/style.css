@@ -45,13 +45,27 @@ scrollbar { opacity: 0; }
   padding: 7px 12px;
   margin: 0 4px;
   border-radius: 4px;
-  border-left: 2px solid transparent;
 }
 
+/* Seleção: preenchimento, não barra.
+
+   A barra branca de 2px continua existindo no tema, mas só onde marca ESTADO
+   FIXO — a saída de áudio padrão, a notificação crítica. Para o item sob o
+   cursor ela era exagero: um traço de alarme para dizer "seu dedo está aqui".
+
+   O preenchimento é branco a 7% e não um cinza fixo de propósito. Estas caixas
+   são translúcidas com blur atrás, então o que está por baixo muda de brilho o
+   tempo todo; um #141414 chapado some sobre conteúdo claro. Uma camada de
+   branco clareia o que quer que esteja lá, e o realce fica igual em qualquer
+   fundo. */
 child:selected .item-box,
 row:selected .item-box {
-  background: #141414;
-  border-left: 2px solid #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Passar o mouse é um degrau abaixo da seleção: metade da força. */
+.item-box:hover {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .item-text { color: #c8c8c8; }
