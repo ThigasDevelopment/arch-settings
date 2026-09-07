@@ -80,8 +80,17 @@ PKGS=(
   # notify-send, usado pelos scripts de menu para confirmar o que fizeram
   libnotify
 
-  # alvo dos cliques nas métricas da barra
+  # btop continua instalado, mas já NÃO é o alvo dos cliques da barra — esses
+  # foram para o gnome-system-monitor abaixo. Fica porque é a ferramenta certa
+  # quando você já está dentro de um terminal e não quer tirar a mão do teclado.
   btop
+
+  # Monitor de sistema com interface. Complementa o btop, não substitui: o
+  # btop é para olhar de dentro do terminal, este é para vasculhar processo e
+  # sistema de arquivos com o mouse. Apesar do nome, NÃO exige a sessão do
+  # GNOME — é um app GTK4/libadwaita comum, como o nautilus que já está aqui.
+  # O "encerrar processo como root" dele depende do agente polkit acima.
+  gnome-system-monitor
 
   # requisitos duros dos providers do Walker:
   #   fd          — elephant-files, sem ele o launcher não acha arquivo

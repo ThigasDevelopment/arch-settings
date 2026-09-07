@@ -21,10 +21,22 @@ import AstalTray from "gi://AstalTray"
 const dispatch = (lua: string) =>
     execAsync(["hyprctl", "dispatch", lua]).catch(() => {})
 
-// Abre um app numa workspace vazia. A regra `[workspace empty]` continua
-// valendo, só que agora dentro do argumento do exec_cmd.
-const spawnEmpty = (cmd: string) =>
-    dispatch(`hl.dsp.exec_cmd("[workspace empty] ${cmd}")`)
+// Abre o monitor de sistema numa aba específica.
+//
+// Sem `[workspace empty]`, ao contrário do que o terminal pedia: o
+// gnome-system-monitor tem regra de janela flutuante e centralizada no
+// hyprland.lua, então mandá-lo para uma workspace vazia teria o efeito
+// perverso de te ARRANCAR de onde você está — justamente a tela cuja
+// atividade você clicou para observar.
+//
+// Ele é single-instance: chamar de novo com outra flag traz a janela que já
+// existe e troca a aba, em vez de abrir uma segunda.
+//
+//   -r  Recursos              gráficos de CPU, memória e rede
+//   -f  Sistemas de arquivos
+//   -p  Processos             (fica no bind SUPER+SHIFT+Esc, não aqui)
+const monitor = (aba: string) =>
+    dispatch(`hl.dsp.exec_cmd("gnome-system-monitor ${aba}")`)
 
 /* ------------------------------------------------------------------ left */
 
@@ -531,7 +543,8 @@ function BateriaPeriferico() {
 
 // O tooltip carrega o que o número sozinho não diz: o modelo da CPU, os GiB
 // absolutos, o tamanho real do disco. O ícone dá o "o quê", o número dá a
-// grandeza, o tooltip dá o contexto — e o clique abre o btop na aba certa.
+// grandeza, o tooltip dá o contexto — e o clique abre o monitor de
+// sistema na aba certa.
 function Metric({
     icon,
     value,
@@ -922,7 +935,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                     <button
                         class="brand"
                         tooltipText={uptime((u) => `${HOST}  ·  Linux ${KERNEL}\nligado há ${u}`)}
-                        onClicked={() => spawnEmpty("kitty -e btop")}
+                        onClicked={() => monitor("-r")}
                     >
                         <label label={ICON.arch} />
                     </button>
@@ -956,19 +969,19 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                         icon={ICON.cpu}
                         value={cpu}
                         tooltip={cpu((v) => `${CPU_MODEL}\n${v} em uso`)}
-                        onClick={() => spawnEmpty("kitty -e btop --preset 1")}
+                        onClick={() => monitor("-r")}
                     />
                     <Metric
                         icon={ICON.mem}
                         value={mem}
                         tooltip={memTip}
-                        onClick={() => spawnEmpty("kitty -e btop --preset 2")}
+                        onClick={() => monitor("-r")}
                     />
                     <Metric
                         icon={ICON.home}
                         value={diskHome}
                         tooltip={diskHomeTip((t) => `/home\n${t}`)}
-                        onClick={() => spawnEmpty("kitty -e btop --preset 5")}
+                        onClick={() => monitor("-f")}
                     />
                     {/*
                         Spread de array em vez de `cond ? <Metric/> : <box/>`.
@@ -984,7 +997,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                                   icon={ICON.hdd}
                                   value={diskStorage}
                                   tooltip={diskStorageTip((t) => `${STORAGE}\n${t}`)}
-                                  onClick={() => spawnEmpty("kitty -e btop --preset 5")}
+                                  onClick={() => monitor("-f")}
                               />,
                           ]
                         : []}

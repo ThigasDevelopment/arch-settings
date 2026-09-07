@@ -285,6 +285,20 @@ hl.window_rule({
     center = true,
 })
 
+-- Monitor de sistema. Não é diálogo: é janela de trabalho, e quer mais espaço
+-- que o pavucontrol. Flutuante porque olhar gráfico é coisa de olhada rápida —
+-- entrar no layout tiled deslocaria as janelas em que você estava trabalhando,
+-- que é justamente o que você quer observar.
+hl.window_rule({
+    name  = "system-monitor",
+    match = { class = "^(org.gnome.SystemMonitor)$" },
+
+    float  = true,
+    center = true,
+    size   = "1100 720",
+})
+
+
 -- Diálogo de autenticação do polkit.
 --
 -- Ele já nasce flutuante por conta própria, mas sem regra fica opaco e sólido
@@ -325,7 +339,9 @@ hl.bind(mainMod .. " + Y",      hl.dsp.exec_cmd("code"), { description = "󰅩  
 hl.bind(mainMod .. " + D",      hl.dsp.exec_cmd("discord"), { description = "󰙯  Abrir o Discord" })
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"), { description = "󰐥  Encerrar a sessão" })
 hl.bind(mainMod .. " + SHIFT + S",      hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "󰄀  Print de uma região para a área de transferência" })
-hl.bind(mainMod .. " + SHIFT + Escape", hl.dsp.exec_cmd(terminal .. " -e btop"), { description = "󰄨  Abrir o btop" })
+-- Ctrl+Shift+Esc abre o gerenciador de tarefas no Windows; este é o mesmo
+-- gesto. Vai direto na aba de Processos, que é o reflexo de quem aperta.
+hl.bind(mainMod .. " + SHIFT + Escape", hl.dsp.exec_cmd("gnome-system-monitor -p"), { description = "󰄨  Abrir o monitor de sistema" })
 
 -- Folha de atalhos. A lista sai do próprio `hyprctl binds`, ou seja, deste
 -- arquivo: o que faz isso funcionar é cada bind acima carregar `description`.
