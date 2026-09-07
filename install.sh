@@ -38,7 +38,13 @@ esac
 # ---------------------------------------------------------------- repo oficial
 PKGS=(
   # compositor e sessão
-  hyprland hyprpaper polkit
+  #
+  # polkit-gnome é o AGENTE, e não é opcional: sem um agente na sessão, todo
+  # pedido de autorização falha em SILÊNCIO — o polkitd procura, não acha e
+  # nega, sem diálogo e sem erro. Escolhido entre os quatro agentes possíveis
+  # por não puxar dependência nenhuma além do que este setup já tem (os de
+  # Qt trariam três pacotes só para isso).
+  hyprland hyprpaper polkit polkit-gnome
   xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-hyprland
 
   # apps que o tema veste
@@ -49,6 +55,11 @@ PKGS=(
 
   # tema: GTK3, GTK4/libadwaita, Qt5, Qt6 e ícones
   adw-gtk-theme papirus-icon-theme qt5ct qt6ct adwaita-fonts
+
+  # cursor do mouse. O hyprland.lua e os settings.ini dos dois GTK apontam
+  # para "capitaine-cursors" pelo nome — sem o pacote, os quatro caem no
+  # Adwaita em silêncio.
+  capitaine-cursors
 
   # fontes
   ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
@@ -61,6 +72,13 @@ PKGS=(
 
   # binds de screenshot (SUPER+SHIFT+S)
   grim slurp wl-clipboard
+
+  # rede: o indicador da barra lê o estado do NetworkManager, e o
+  # scripts/network-menu.sh usa nmcli e nmtui, os dois deste pacote.
+  networkmanager
+
+  # notify-send, usado pelos scripts de menu para confirmar o que fizeram
+  libnotify
 
   # alvo dos cliques nas métricas da barra
   btop
@@ -160,6 +178,22 @@ for theme in Papirus-Dark Papirus; do
   done
 done
 sudo gtk-update-icon-cache -f /usr/share/icons/Papirus-Dark >/dev/null 2>&1 || true
+
+# Cadeado do diálogo de autenticação, em cinza.
+#
+# O `dialog-password` do Papirus é dourado — a única cor que aparecia no
+# diálogo do polkit. A cópia vai para ~/.local/share/icons, que o GTK varre
+# ANTES de /usr/share: sombreia só este nome de ícone, sem trocar o tema.
+for sz in 16x16 22x22 24x24 32x32 48x48 64x64; do
+  mkdir -p "$HOME/.local/share/icons/Papirus-Dark/$sz/actions"
+  cp "$DOTFILES_DIR/icons/dialog-password.svg" \
+     "$HOME/.local/share/icons/Papirus-Dark/$sz/actions/dialog-password.svg"
+done
+# O GTK só considera o diretório do usuário como parte do tema se ele tiver
+# index.theme; sem isto o override é ignorado em silêncio.
+cp /usr/share/icons/Papirus-Dark/index.theme \
+   "$HOME/.local/share/icons/Papirus-Dark/index.theme" 2>/dev/null || true
+echo "  cadeado do polkit em cinza"
 
 echo
 
