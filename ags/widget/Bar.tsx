@@ -293,6 +293,37 @@ function readFile(path: string): string {
 }
 
 // Lidos uma vez: não mudam enquanto a sessão vive.
+// Tipo da máquina, lido uma vez: não muda enquanto a sessão vive.
+//
+// hostnamectl e não o DMI cru porque o systemd já interpreta os códigos do
+// SMBIOS e trata VM, tablet e conversível. Devolve desktop, laptop, vm,
+// tablet, convertible, handset, server ou embedded.
+//
+// Serve para MOSTRAR o que é a máquina — não para decidir o que a barra
+// exibe. O DMI é palpite do fabricante: esta placa reporta chassis_vendor
+// "Default string", e num notebook mal preenchido o rótulo esconderia uma
+// bateria que existe. Quem decide é a evidência física, abaixo.
+const CHASSI = (() => {
+    try {
+        const [ok, out] = GLib.spawn_command_line_sync("hostnamectl chassis")
+        const t = ok ? new TextDecoder().decode(out).trim() : ""
+        return t || "desconhecido"
+    } catch {
+        return "desconhecido"
+    }
+})()
+
+const NOME_CHASSI: Record<string, string> = {
+    desktop: "Desktop",
+    laptop: "Notebook",
+    convertible: "Conversível",
+    tablet: "Tablet",
+    vm: "Máquina virtual",
+    server: "Servidor",
+    handset: "Celular",
+    embedded: "Embarcado",
+}
+
 const CPU_MODEL = (readFile("/proc/cpuinfo").match(/model name\s*:\s*(.+)/)?.[1] ?? "CPU").trim()
 const KERNEL = readFile("/proc/sys/kernel/osrelease").trim()
 const HOST = GLib.get_host_name()
@@ -464,7 +495,96 @@ function lerPerifericos(): Periferico[] {
     return achados.sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome))
 }
 
-const perifericos = createPoll<Periferico[]>([], 30_000, lerPerifericos)
+// 5s, e não os 30s originais.
+//
+// A distinção não é de custo, é de natureza: CPU e memória são OBSERVAÇÃO —
+// você olha, não age. Plugar um carregador é AÇÃO, e ação pede confirmação.
+// Com 30s você plugava, olhava a barra, via o estado de meio minuto atrás e
+// concluía que estava quebrado; reiniciar o AGS "consertava" só porque força
+// uma leitura imediata.
+//
+// O custo medido de uma varredura completa do sysfs é 70 µs, o que a cada 5s
+// dá 0,0014% de CPU. Os 30s não compravam nada.
+const INTERVALO_BATERIA = 5_000
+
+const perifericos = createPoll<Periferico[]>([], INTERVALO_BATERIA, lerPerifericos)
+
+type Bateria = {
+    nivel: number
+    carregando: boolean
+    cheia: boolean
+    restante: string
+}
+
+// Bateria do PRÓPRIO computador — a que um notebook tem e este desktop não.
+//
+// O gatilho do widget é esta função devolver algo, e não o tipo do chassi.
+// Um notebook com a bateria removida não deve mostrar indicador, e um
+// notebook com DMI mal preenchido não deve esconder o que existe. Nos dois
+// casos a evidência acerta e o rótulo erra.
+function lerBateriaSistema(): Bateria | null {
+    let dir: GLib.Dir
+
+    try {
+        dir = GLib.Dir.open(PSU, 0)
+    } catch {
+        return null
+    }
+
+    let entrada: string | null
+
+    while ((entrada = dir.read_name()) !== null) {
+        const base = `${PSU}/${entrada}`
+
+        if (readOpt(`${base}/type`) !== "Battery") continue
+
+        // scope ausente = System. Periférico SEMPRE declara scope=Device, então
+        // tratar a ausência como sistema é seguro e cobre kernels antigos que
+        // nem escrevem o arquivo para a bateria interna.
+        const scope = readOpt(`${base}/scope`)
+        if (scope !== "" && scope !== "System") continue
+
+        const cap = readOpt(`${base}/capacity`)
+        if (cap === "") continue
+
+        const nivel = Number(cap)
+        if (!Number.isFinite(nivel)) continue
+
+        const status = readOpt(`${base}/status`)
+
+        // Tempo restante a partir de energia/potência, quando o firmware
+        // publica os dois. Nem todo notebook publica; sem eles a linha some do
+        // tooltip em vez de mostrar um número inventado.
+        //
+        // Há duas convenções e é preciso aceitar as duas: energy_* (µWh/µW) em
+        // uns firmwares, charge_*/current_* (µAh/µA) em outros. A divisão dá
+        // horas nas duas, porque as unidades se cancelam.
+        const carga = Number(readOpt(`${base}/energy_now`) || readOpt(`${base}/charge_now`))
+        const fluxo = Number(readOpt(`${base}/power_now`) || readOpt(`${base}/current_now`))
+
+        let restante = ""
+
+        if (Number.isFinite(carga) && Number.isFinite(fluxo) && fluxo > 0) {
+            const horas = status === "Charging" ? 0 : carga / fluxo
+            if (status !== "Charging" && horas > 0 && horas < 48) {
+                const h = Math.floor(horas)
+                const m = Math.round((horas - h) * 60)
+                restante = h > 0 ? `${h}h ${m}min restantes` : `${m}min restantes`
+            }
+        }
+
+        return {
+            nivel,
+            carregando: status === "Charging",
+            cheia: status === "Full",
+            restante,
+        }
+    }
+
+    return null
+}
+
+const bateria = createPoll<Bateria | null>(null, INTERVALO_BATERIA, lerBateriaSistema)
 
 // Aqui o ícone segue o NÍVEL, e não o "o quê" como nas outras métricas.
 //
@@ -518,6 +638,65 @@ function BateriaPeriferico() {
                 })}
             />
             <label class="metricValue" label={alvo((p) => (p ? `${p.nivel}%` : "--"))} />
+        </box>
+    )
+}
+
+// Bateria do computador. Só existe onde existe bateria — num desktop o widget
+// simplesmente nunca aparece, sem precisar saber que é um desktop.
+//
+// E mesmo num notebook ele fica ESCONDIDO enquanto a carga está saudável.
+// Mesmo princípio do indicador da área mágica, que some com a gaveta vazia: a
+// barra avisa, não relata. Um número que fica 90% do tempo dizendo "está tudo
+// bem" treina o olho a ignorá-lo, e aí ele não avisa mais quando precisa.
+//
+// Dois degraus, e a diferença importa:
+//   <= 30%  aparece em cinza     — "vá pensando na tomada"
+//   <= 20%  vai a branco         — "agora"
+//
+// Carregando ele continua visível abaixo de 30%, com o glifo de raio: some
+// sozinho quando a carga passa do limiar, que é o retorno de que resolveu.
+const APARECE_ABAIXO_DE = 30
+const ALARME_ABAIXO_DE = 20
+
+// Mesma escolha da bateria de periférico: o ícone segue o NÍVEL, porque a
+// pergunta aqui não é "quanto está" e sim "preciso procurar uma tomada?".
+function BateriaSistema() {
+    return (
+        <box
+            visible={bateria((b) => b !== null && b.nivel <= APARECE_ABAIXO_DE)}
+            class={bateria((b) =>
+                b && !b.carregando && !b.cheia && b.nivel <= ALARME_ABAIXO_DE
+                    ? "bateria baixa"
+                    : "bateria",
+            )}
+            tooltipText={bateria((b) => {
+                if (!b) return ""
+
+                const estado = b.carregando
+                    ? "carregando"
+                    : b.cheia
+                      ? "carregada"
+                      : "na bateria"
+
+                // A linha de tempo some quando o firmware não publica os
+                // contadores, em vez de mostrar um número inventado.
+                return `Bateria  ·  ${b.nivel}%  ·  ${estado}` +
+                    (b.restante ? `\n${b.restante}` : "")
+            })}
+        >
+            <label
+                class="metricIcon"
+                label={bateria((b) => {
+                    if (!b) return ICON.batFull
+                    if (b.carregando) return ICON.batCharging
+                    if (b.nivel <= 15) return ICON.batAlert
+                    if (b.nivel <= 35) return ICON.batLow
+                    if (b.nivel <= 70) return ICON.batMid
+                    return ICON.batFull
+                })}
+            />
+            <label class="metricValue" label={bateria((b) => (b ? `${b.nivel}%` : "--"))} />
         </box>
     )
 }
@@ -915,7 +1094,11 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                 <box $type="start" class="side">
                     <button
                         class="brand"
-                        tooltipText={uptime((u) => `${HOST}  ·  Linux ${KERNEL}\nligado há ${u}`)}
+                        tooltipText={uptime(
+                            (u) =>
+                                `${HOST}  ·  ${NOME_CHASSI[CHASSI] ?? CHASSI}\n` +
+                                `Linux ${KERNEL}\nligado há ${u}`,
+                        )}
                         onClicked={() => monitor("-r")}
                     >
                         <label label={ICON.arch} />
@@ -983,6 +1166,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
                           ]
                         : []}
 
+                    <BateriaSistema />
                     <BateriaPeriferico />
                     <Volume />
 
