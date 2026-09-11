@@ -1,7 +1,7 @@
 /* power — menu de energia do Walker.
    Caixa pequena ancorada no canto superior direito, logo abaixo do ícone
    de power da barra. Sem campo de busca (o script chama com --nosearch):
-   são quatro opções fixas, não há o que pesquisar. */
+   são cinco opções fixas, não há o que pesquisar. */
 
 @define-color window_bg_color #0b0b0b;
 @define-color accent_bg_color #ffffff;
@@ -75,7 +75,7 @@ child:selected .item-text { color: #ffffff; font-weight: 600; }
 .item-quick-activation,
 .keybinds,
 .preview {
-  /* sem subtítulo, sem dica de atalho, sem preview: quatro linhas e pronto */
+  /* sem subtítulo, sem dica de atalho, sem preview: cinco linhas e pronto */
   opacity: 0;
   min-height: 0;
   padding: 0;
