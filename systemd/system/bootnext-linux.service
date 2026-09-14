@@ -1,0 +1,18 @@
+[Unit]
+Description=Aponta o proximo boot para o Linux antes de reiniciar
+Documentation=file:///usr/local/bin/bootnext-linux
+# WantedBy=reboot.target la embaixo faz a unit ser puxada SO quando o alvo e
+# reiniciar. No poweroff ela nao roda: desligar e ligar de novo segue a
+# BootOrder, que nesta maquina abre o Windows.
+DefaultDependencies=no
+# Antes de desmontar: o efibootmgr mora em /usr, e mais para o fim do
+# desligamento esse caminho ja pode ter ido embora.
+Before=reboot.target umount.target
+ConditionPathIsDirectory=/sys/firmware/efi/efivars
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/bootnext-linux
+
+[Install]
+WantedBy=reboot.target
