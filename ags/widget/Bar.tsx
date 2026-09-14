@@ -759,10 +759,28 @@ function TrayItem({ item }: { item: AstalTray.TrayItem }) {
 
         // Menu e grupo de ações são reenviados pelo app ao longo da vida do
         // ícone; ligar uma vez só congelaria o menu do primeiro segundo.
+        // O modelo que já está instalado no popover. Guardado porque o
+        // AstalTray reemite notify::menu-model com o MESMO objeto — medido com
+        // instrumentação: objetoMudou=false em todas as amostras.
+        let modeloInstalado = item.menuModel
+
         const ids = [
-            item.connect("notify::menu-model", () =>
-                popover.set_menu_model(item.menuModel),
-            ),
+            item.connect("notify::menu-model", () => {
+                const modelo = item.menuModel
+
+                // Reinstalar o modelo que já está lá não é só desperdício: o
+                // set_menu_model faz o GTK DESTRUIR e reconstruir o popover
+                // inteiro. Com o menu aberto, isso derruba o submenu debaixo do
+                // cursor, e é a explicação do travamento a ~1 FPS ao navegar.
+                //
+                // Não perde atualização: GMenuModel é vivo. Quando o conteúdo
+                // muda de verdade, ele emite items-changed e o GTK atualiza
+                // sozinho, sem precisar ser reinstalado.
+                if (modelo === modeloInstalado) return
+
+                modeloInstalado = modelo
+                popover.set_menu_model(modelo)
+            }),
             item.connect("notify::action-group", () =>
                 self.insert_action_group("dbusmenu", item.actionGroup),
             ),

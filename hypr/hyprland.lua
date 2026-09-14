@@ -97,7 +97,24 @@ hl.exec_cmd([[gsettings set org.gnome.nautilus.preferences default-sort-order   
 
 hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
-    hl.exec_cmd("ags run")
+    -- AGS sob systemd, e não `ags run` solto.
+    --
+    -- Em 2026-09-14 ele morreu com SIGTRAP vindo do menu do tray e a barra
+    -- simplesmente não voltou — sem supervisor, um crash deixa o desktop sem
+    -- barra até alguém perceber e subir na mão. A unit reinicia em 2s.
+    --
+    -- Ganho de tabela, e não menor: solto, a saída do ags ia para o log do
+    -- Hyprland e se perdia. Foi por isso que a mensagem fatal do g_log não
+    -- apareceu em lugar nenhum quando fomos investigar. Sob systemd tudo cai
+    -- no journal: `journalctl --user -u ags -f`.
+    --
+    -- Tudo num `sh -c` só porque a ORDEM importa e o exec_cmd é fire-and-forget:
+    --   import-environment  o HYPRLAND_INSTANCE_SIGNATURE muda a cada sessão,
+    --                       e o systemd guardaria o da sessão anterior
+    --   reset-failed        se a sessão passada terminou com a unit em falha,
+    --                       o systemd se recusa a iniciar de novo sem isto
+    --   restart             em vez de start, para nunca haver duas instâncias
+    hl.exec_cmd([[sh -c 'systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP; systemctl --user reset-failed ags.service 2>/dev/null; systemctl --user restart ags.service']])
 
     -- elephant é o backend de providers do Walker 2.x. Sem ele o launcher abre
     -- vazio. Não existe unit do systemd, então sobe aqui.

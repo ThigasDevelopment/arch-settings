@@ -1,0 +1,26 @@
+[Unit]
+Description=AGS — barra e notificações do tema mono
+Documentation=https://aylur.github.io/ags/
+
+# Sem PartOf=graphical-session.target de propósito: esse alvo está INATIVO
+# neste setup. O Hyprland sobe por um start-hyprland compilado, não por uwsm,
+# e nada ativa o alvo — pendurar a unit nele seria decoração que não roda.
+#
+# O encerramento da sessão fica coberto pelo limite abaixo: sem compositor, o
+# ags falha ao conectar, esgota as 5 tentativas em ~10s e o systemd desiste.
+# Sem isso, Restart=always giraria para sempre depois que você desloga.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ags run
+
+# O motivo de tudo isto: em 2026-09-14 o ags morreu com SIGTRAP vindo do
+# caminho do menu do tray (dbus_menu_item_preload -> chamada D-Bus síncrona ->
+# g_main_context_new_with_flags -> g_log fatal) e a barra não voltou.
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
