@@ -150,26 +150,86 @@ fi
 echo "[4/6] AUR"
 yay -S --needed --noconfirm --answerdiff=None --answerclean=None "${AUR[@]}"
 
-echo "[5/6] Ligando os dotfiles"
-# Symlink por diretório. NÃO use `stow --target=~/.config`: o stow espalha o
-# CONTEÚDO do pacote no alvo, então gtk-3.0/gtk.css viraria ~/.config/gtk.css
-# e colidiria com o gtk-4.0. Aqui cada pasta vira ~/.config/<nome>.
+echo "[5/6] Instalando os dotfiles"
+
+# CÓPIA, e não symlink.
+#
+# Symlink amarra a config em uso ao diretório onde o repo foi clonado. Três
+# consequências, todas ruins:
+#
+#   - mover ou apagar o clone quebra o desktop inteiro, e o erro aparece como
+#     um caminho /home/fulano/projetos/... que não existe mais
+#   - qualquer coisa que reescreva um arquivo de config passa a editar o REPO
+#     sem querer (o sed do elephant, mais abaixo, fazia exatamente isso)
+#   - o repo nunca fica limpo: `git status` vive sujo com mudanças de runtime
+#
+# O preço é que editar ~/.config não atualiza mais o repo. É deliberado: para
+# publicar, copie de volta e commite.
+#
+# NÃO use `stow --target=~/.config`: o stow espalha o CONTEÚDO do pacote no
+# alvo, então gtk-3.0/gtk.css viraria ~/.config/gtk.css e colidiria com o
+# gtk-4.0. Aqui cada pasta vira ~/.config/<nome>.
+
+BACKUP="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+
+# Guarda o que existe antes de sobrescrever. Sem isto o script apagava a
+# config anterior de quem já tinha uma, sem chance de voltar.
+guardar() {
+  [ -e "$1" ] || return 0
+  mkdir -p "$BACKUP"
+  cp -a "$1" "$BACKUP/" 2>/dev/null || true
+}
+
 mkdir -p "$HOME/.config"
 for d in hypr ags walker elephant kitty gtk-3.0 gtk-4.0 qt5ct qt6ct xdg-desktop-portal fontconfig; do
   [ -d "$DOTFILES_DIR/$d" ] || continue
+  guardar "$HOME/.config/$d"
   rm -rf "$HOME/.config/$d"
-  ln -sfn "$DOTFILES_DIR/$d" "$HOME/.config/$d"
+  cp -a "$DOTFILES_DIR/$d" "$HOME/.config/$d"
 done
-ln -sf "$DOTFILES_DIR/.profile"       "$HOME/.profile"
-ln -sf "$DOTFILES_DIR/zsh/.zshrc"     "$HOME/.zshrc"
-ln -sf "$DOTFILES_DIR/zsh/.zprofile"  "$HOME/.zprofile"
-ln -sf "$DOTFILES_DIR/starship.toml"  "$HOME/.config/starship.toml"
-chmod +x "$DOTFILES_DIR/hypr/scripts/"*.sh "$DOTFILES_DIR/scripts/"*.sh
+
+for par in ".profile:$HOME/.profile" \
+           "zsh/.zshrc:$HOME/.zshrc" \
+           "zsh/.zprofile:$HOME/.zprofile" \
+           "starship.toml:$HOME/.config/starship.toml"; do
+  origem="$DOTFILES_DIR/${par%%:*}"
+  destino="${par#*:}"
+  [ -e "$origem" ] || continue
+  guardar "$destino"
+  cp -a "$origem" "$destino"
+done
+
+chmod +x "$HOME/.config/hypr/scripts/"*.sh 2>/dev/null || true
+
+[ -d "$BACKUP" ] && echo "  config anterior guardada em $BACKUP"
+
+# Unit do AGS. Sem supervisor, um crash da barra deixa o desktop sem ela até
+# alguém perceber — aconteceu em 2026-09-14, com SIGTRAP vindo do menu do
+# tray. A unit reinicia em 2s e manda tudo para o journal.
+if [ -f "$DOTFILES_DIR/systemd/user/ags.service" ]; then
+  mkdir -p "$HOME/.config/systemd/user"
+  cp -a "$DOTFILES_DIR/systemd/user/ags.service" "$HOME/.config/systemd/user/ags.service"
+  systemctl --user daemon-reload 2>/dev/null || true
+  echo "  unit do ags instalada"
+fi
 
 # O elephant procura arquivos nos diretórios listados em files.toml, e TOML
-# não expande variável. Reescreve o caminho do home com o usuário real.
-sed -i "s|^  \"/home/[^\"]*\",|  \"$HOME\",|" "$DOTFILES_DIR/elephant/files.toml"
+# não expande variável. Reescreve o caminho do home com o usuário real — na
+# CÓPIA, não no repo.
+sed -i "s|^  \"/home/[^\"]*\",|  \"$HOME\",|" "$HOME/.config/elephant/files.toml"
 echo "  busca de arquivos apontada para $HOME"
+
+# Shell de login.
+#
+# Era um passo MANUAL escondido no fim do script, e ninguém lia: quem instalava
+# ficava em bash, o .zprofile nunca era executado, o Hyprland não subia no tty1
+# e o ricing parecia não ter sido aplicado.
+if [ "$(getent passwd "$USER" | cut -d: -f7)" != "/usr/bin/zsh" ]; then
+  echo "  trocando o shell de login para zsh (o chsh pede sua senha)"
+  chsh -s /usr/bin/zsh || echo "  AVISO: chsh falhou — rode 'chsh -s /usr/bin/zsh' na mão"
+else
+  echo "  shell de login já é zsh"
+fi
 
 echo "[6/6] Pastas de ícones em cinza"
 # O Papirus vem com pastas azuis. Em cinza elas ficam legíveis sobre o fundo
@@ -234,5 +294,5 @@ else
 fi
 
 echo "Pronto. Falta à mão:"
-echo "  1. chsh -s /usr/bin/zsh        (o .zprofile sobe o Hyprland no tty1)"
+echo "  1. Saia e entre de novo      (o shell já foi trocado para zsh acima)"
 echo "  2. Ajustar o monitor em hypr/hyprland.lua se quiser fixar resolução"
