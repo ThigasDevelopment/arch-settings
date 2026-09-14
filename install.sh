@@ -293,6 +293,31 @@ else
     echo "  sbctl não instalado (deveria ter vindo com este script)."
 fi
 
+# -------------------------------------------------------------- Splash de boot
+# Também só DIAGNÓSTICO, pelo mesmo motivo do Secure Boot acima: o splash mexe
+# em initramfs e na linha de comando do kernel, que são do seu sistema e não
+# do tema. Um erro ali não estraga o desktop — estraga o boot.
+echo
+echo "── Splash de boot ──"
+if [ -d /usr/share/plymouth/themes/arch-mac ]; then
+    echo "  tema arch-mac já instalado."
+    if grep -qE '^HOOKS=.*\bplymouth\b' /etc/mkinitcpio.conf 2>/dev/null; then
+        echo "  hook ativo — o boot já sobe com o logo e a barra."
+    else
+        echo "  AVISO: o tema está lá, mas o hook não está no mkinitcpio.conf."
+        echo "  Rode:  bash $DOTFILES_DIR/scripts/boot-splash.sh"
+    fi
+else
+    echo "  o boot mostra as mensagens do kernel. Para trocar pelo logo do Arch"
+    echo "  com barra de progresso, em fundo preto:"
+    echo
+    echo "    bash $DOTFILES_DIR/scripts/boot-splash.sh"
+    echo
+    echo "  Deixe para o final, com o desktop já funcionando. O script guarda"
+    echo "  uma cópia do boot atual antes de mexer, e desfaz com --revert."
+fi
+
 echo "Pronto. Falta à mão:"
 echo "  1. Saia e entre de novo      (o shell já foi trocado para zsh acima)"
 echo "  2. Ajustar o monitor em hypr/hyprland.lua se quiser fixar resolução"
+echo "  3. Splash de boot, se quiser: bash $DOTFILES_DIR/scripts/boot-splash.sh"

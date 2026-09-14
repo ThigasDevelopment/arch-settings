@@ -1,0 +1,133 @@
+# arch-mac — splash minimalista: logo do Arch + barra de progresso.
+# Proporcoes sao relativas a tela, entao o tema funciona em qualquer resolucao.
+
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+screen.w = Window.GetWidth();
+screen.h = Window.GetHeight();
+
+#--- logo --------------------------------------------------------------------
+logo.src    = Image("logo.png");
+logo.h      = Math.Int(screen.h * 0.128);
+logo.w      = Math.Int(logo.src.GetWidth() * logo.h / logo.src.GetHeight());
+logo.sprite = Sprite(logo.src.Scale(logo.w, logo.h));
+logo.sprite.SetPosition(Math.Int((screen.w - logo.w) / 2),
+                        Math.Int(screen.h * 0.468 - logo.h / 2), 1);
+
+#--- barra de progresso ------------------------------------------------------
+bar.w = Math.Int(screen.w * 0.13);
+bar.h = Math.Int(screen.h / 180);
+if (bar.h < 3) { bar.h = 3; }
+bar.x = Math.Int((screen.w - bar.w) / 2);
+bar.y = Math.Int(screen.h * 0.594);
+
+track.sprite = Sprite(Image("track.png").Scale(bar.w, bar.h));
+track.sprite.SetPosition(bar.x, bar.y, 2);
+
+fill.src    = Image("fill.png");
+fill.sprite = Sprite();
+fill.sprite.SetPosition(bar.x, bar.y, 3);
+fill.last   = -1;
+
+fun set_progress(fraction) {
+  if (fraction < 0) { fraction = 0; }
+  if (fraction > 1) { fraction = 1; }
+  w = Math.Int(bar.w * fraction);
+  if (w < 1) { w = 1; }
+  if (w != fill.last) {
+    fill.last = w;
+    fill.sprite.SetImage(fill.src.Scale(w, bar.h));
+  }
+}
+
+set_progress(0);
+
+# Quanto tempo a barra leva para encher, em segundos, se ninguém a apressar.
+#
+# Por que a barra NÃO é só o progresso do plymouth: aquele número é a fração
+# de serviços do systemd já iniciados, comparada com a duração do boot
+# anterior. Durante o initramfs inteiro nenhum serviço do systemd roda, então
+# ele fica parado em zero justamente enquanto o logo já está na tela — e a
+# barra tinha ~1,4s de userspace para percorrer tudo. Resultado medido aqui:
+# ela chegava à metade e o login aparecia por cima.
+#
+# 2.0 foi escolhido com o relógio na mão: neste sistema o plymouth-quit mata o
+# splash 2,06s depois do início do userspace, e o plymouth já está desenhando
+# desde o initramfs, antes disso. Encher em 2,0s garante barra cheia antes do
+# prompt, com folga. Se o seu boot for mais lento e a barra encher cedo demais,
+# aumente; ela fica cheia esperando, que é o que o splash do Mac também faz.
+fill.alvo   = 2.0;
+fill.fps    = 50;    # taxa com que o plymouth chama o refresh
+fill.frames = 0;
+fill.real   = 0;     # última estimativa vinda do plymouth
+fill.atual  = 0;     # o que está desenhado — só cresce
+
+# O plymouth chama isto a cada quadro, então a animação fica suave mesmo quando
+# o progresso real dá saltos. O que manda é quem estiver MAIS adiantado: se o
+# boot correr mais rápido que o alvo, a barra acompanha em vez de atrasar.
+fun on_refresh() {
+  fill.frames = fill.frames + 1;
+  por_tempo = fill.frames / (fill.fps * fill.alvo);
+
+  p = fill.real;
+  if (por_tempo > p) { p = por_tempo; }
+
+  # Nunca anda para trás: a estimativa do plymouth pode cair quando ele revisa
+  # a conta, e barra que volta atrás chama mais atenção que barra parada.
+  if (p > fill.atual) {
+    fill.atual = p;
+    set_progress(p);
+  }
+}
+Plymouth.SetRefreshFunction(on_refresh);
+
+fun on_boot_progress(duration, progress) {
+  fill.real = progress;
+}
+Plymouth.SetBootProgressFunction(on_boot_progress);
+
+#--- texto (senha de disco, avisos de fsck) ----------------------------------
+# So aparece quando o boot realmente precisa falar com voce.
+text.sprite = Sprite();
+text.sprite.SetZ(4);
+
+fun show_text(str) {
+  if (str == "") {
+    text.sprite.SetImage(Image.Text(" ", 0, 0, 0));
+    return;
+  }
+  img = Image.Text(str, 0.75, 0.75, 0.75);
+  text.sprite.SetImage(img);
+  text.sprite.SetX(Math.Int((screen.w - img.GetWidth()) / 2));
+  text.sprite.SetY(Math.Int(screen.h * 0.66));
+}
+
+fun on_message(str) {
+  show_text(str);
+}
+Plymouth.SetMessageFunction(on_message);
+
+fun on_password(prompt, bullets) {
+  dots = "";
+  i = 0;
+  while (i < bullets) {
+    dots += "*";
+    i = i + 1;
+  }
+  show_text(prompt + "  " + dots);
+}
+Plymouth.SetDisplayPasswordFunction(on_password);
+
+fun on_normal() {
+  show_text("");
+}
+Plymouth.SetDisplayNormalFunction(on_normal);
+
+#--- saida -------------------------------------------------------------------
+fun on_quit() {
+  fill.atual = 1;
+  set_progress(1);
+  show_text("");
+}
+Plymouth.SetQuitFunction(on_quit);

@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Arch Mac
+Description=Logo do Arch centralizado com barra de progresso, fundo preto
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/arch-mac
+ScriptFile=/usr/share/plymouth/themes/arch-mac/arch-mac.script
