@@ -226,15 +226,19 @@ centerbox {
     font-size: 14px;
 }
 
+/* A ÚNICA cor da barra, a pedido: todo o resto do tema é preto e branco.
+   Mantém a gramática dos outros itens — apagado em repouso, aceso no hover —
+   só que no matiz em vez de no cinza. O #ff5f56 é o mesmo vermelho do botão
+   de fechar do macOS, que é de onde veio o splash de boot. */
 .power {
-    color: #3d3d3d;
+    color: #b34640;
     min-width: 24px;
     border-radius: 4px;
     transition: color 160ms ease, background-color 160ms ease;
 }
 
 .power:hover {
-    color: #ffffff;
+    color: #ff5f56;
     background: #141414;
 }
 
