@@ -355,6 +355,11 @@ hl.bind(mainMod .. " + V",      hl.dsp.exec_cmd(menu .. " --provider clipboard")
 hl.bind(mainMod .. " + Y",      hl.dsp.exec_cmd("code"), { description = "󰅩  Abrir o VS Code" })
 hl.bind(mainMod .. " + D",      hl.dsp.exec_cmd("discord"), { description = "󰙯  Abrir o Discord" })
 hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"), { description = "󰐥  Encerrar a sessão" })
+-- Espiar os widgets de desktop. Eles vivem na camada `bottom`, embaixo de
+-- toda janela — o que significa que numa tela cheia de janela eles existem e
+-- não aparecem. Este atalho sobe todos para `overlay` e desce de novo; o AGS
+-- trata o pedido em app.ts.
+hl.bind(mainMod .. " + G",      hl.dsp.exec_cmd("ags request peek"), { description = "󰈈  Espiar os widgets da área de trabalho" })
 hl.bind(mainMod .. " + SHIFT + S",      hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "󰄀  Print de uma região para a área de transferência" })
 -- Ctrl+Shift+Esc abre o gerenciador de tarefas no Windows; este é o mesmo
 -- gesto. Vai direto na aba de Processos, que é o reflexo de quem aperta.

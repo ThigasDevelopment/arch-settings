@@ -806,3 +806,147 @@ popover.menu scrollbar {
     opacity: 0;
     min-width: 0;
 }
+
+/* -------------------------------------------------------------- desktop */
+
+/* A janela é só um lugar no espaço: o desenho todo mora no cartão. Fundo
+   explicitamente transparente porque a margem entre a borda da tela e o
+   cartão faz parte da superfície — pintada, viraria uma moldura preta
+   colada na borda do monitor. */
+window.Desktop {
+    background: transparent;
+}
+
+/* Respiro entre cartões do mesmo canto. Vale para quando houver o segundo. */
+.desktopStack > * {
+    margin-bottom: 10px;
+}
+
+.desktopStack > *:last-child {
+    margin-bottom: 0;
+}
+
+/* O cartão. Mesma receita da barra — preto translúcido para o blur do
+   Hyprland aparecer, borda de 1px, sem cor nenhuma — com o raio maior:
+   a barra encosta na borda da tela e por isso é reta; o cartão flutua. */
+.DesktopCard {
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(38, 38, 38, 0.8);
+    border-radius: 10px;
+    padding: 12px;
+    color: #8a8a8a;
+}
+
+.cardHead {
+    margin-bottom: 10px;
+}
+
+.cardIcon {
+    color: #3d3d3d;
+    font-size: 13px;
+    margin-right: 6px;
+}
+
+/* O cabeçalho é etiqueta, não manchete: quem olha o cartão quer o título da
+   faixa, não a palavra "Spotify". Daí o caixa-alta pequeno e apagado —
+   ocupa a posição de topo sem disputar leitura com o conteúdo. */
+.cardTitle {
+    color: #3d3d3d;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------- mídia */
+
+.media {
+    /* Largura fixa e não mínima: a capa é quadrada e constante, então é o
+       texto que decide o tamanho — e título de faixa varia de "Hey" a
+       nomes de 60 caracteres. Sem a trava, o cartão respirava de tamanho a
+       cada troca de música. O ellipsize dos labels faz o corte. */
+    min-width: 340px;
+}
+
+.cover {
+    margin-right: 12px;
+}
+
+/* Sem capa, o glifo ocupa exatamente o mesmo quadrado de 72px que a imagem
+   ocuparia — é o que impede o texto ao lado de andar quando a faixa
+   seguinte vem com arte. */
+.coverEmpty {
+    min-width: 72px;
+    min-height: 72px;
+    background: #141414;
+    border-radius: 6px;
+    color: #262626;
+    font-size: 28px;
+}
+
+.media .title {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.media .artist {
+    color: #8a8a8a;
+    margin-top: 1px;
+}
+
+.media .seek {
+    margin-top: 10px;
+}
+
+.media .times label {
+    color: #3d3d3d;
+    font-size: 10px;
+}
+
+.media .times {
+    margin-top: 2px;
+}
+
+.controls {
+    margin-top: 8px;
+}
+
+.ctl {
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background-color 160ms ease;
+}
+
+.ctl label {
+    color: #c8c8c8;
+    font-size: 16px;
+}
+
+/* O play/pause é o único botão que alguém procura sem olhar. Ele ganha
+   tamanho e branco puro; o resto fica em cinza de texto. É a mesma
+   hierarquia por peso que a barra usa no lugar de cor. */
+.ctl.main label {
+    color: #ffffff;
+    font-size: 20px;
+}
+
+.ctl.small label {
+    font-size: 12px;
+}
+
+/* Aleatório e repetição são estado, não ação: o glifo apagado diz
+   "desligado" sem precisar de um segundo elemento para indicar isso. */
+.ctl label.off {
+    color: #3d3d3d;
+}
+
+.ctl label.on {
+    color: #ffffff;
+}
+
+.ctl:hover {
+    background: #141414;
+}
+
+.ctl:disabled label {
+    color: #262626;
+}
