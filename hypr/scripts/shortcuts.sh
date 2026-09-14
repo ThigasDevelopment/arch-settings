@@ -51,7 +51,11 @@ for b in json.load(sys.stdin):
     partes = [nome for bit, nome in MODS if b["modmask"] & bit]
     tecla = b["key"] or ("code:" + str(b["keycode"]))
     partes.append(BONITO.get(tecla, tecla))
-    linhas.append((" + ".join(partes), desc))
+    # A description vem "Seção|glifo  texto"; aqui a seção é descartada — quem
+    # desenha seções é o AGS (ags/widget/Atalhos.tsx), para onde o SUPER+A
+    # aponta. Este script sobrou como rede: no dmenu do Walker todo item é um
+    # label só, sem markup, e seção ali só sairia como linha de tracinho.
+    linhas.append((" + ".join(partes), desc.partition("|")[2] or desc))
 
 # Coluna da tecla com largura fixa: é o que faz as duas colunas alinharem.
 # Só funciona porque o tema desta folha usa fonte monoespaçada.

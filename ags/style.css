@@ -1014,3 +1014,110 @@ window.Desktop {
     color: #3d3d3d;
     font-size: 11px;
 }
+
+/* ------------------------------------------------------------- atalhos */
+
+/* A janela é a tela inteira de nada: o desenho mora no cartão de dentro.
+   Transparente porque a camada cobre tudo e um fundo aqui escureceria o
+   desktop inteiro. */
+window.Atalhos {
+    background: transparent;
+}
+
+.atalhos {
+    /* O mesmo preto dos popovers da barra — 0.96, não o 0.55 dos cartões de
+       desktop: aqui é para LER, e texto denso sobre papel de parede é o
+       jeito mais rápido de tornar uma folha de consulta ilegível. */
+    background: rgba(11, 11, 11, 0.96);
+    border: 1px solid #262626;
+    border-radius: 10px;
+    padding: 18px 20px;
+}
+
+.atalhosHead {
+    margin-bottom: 14px;
+}
+
+.atalhosTitulo {
+    color: #ffffff;
+    font-size: 15px;
+}
+
+.atalhosDica {
+    color: #3d3d3d;
+    font-size: 11px;
+}
+
+.atalhosCorpo > * {
+    margin-right: 28px;
+}
+
+.atalhosCorpo > *:last-child {
+    margin-right: 0;
+}
+
+.atalhoSecao {
+    margin-bottom: 14px;
+}
+
+.atalhoSecao:last-child {
+    margin-bottom: 0;
+}
+
+/* Mesmo tratamento do .soundSection do popover de volume: 10px com
+   letter-spacing é o degrau mais baixo da hierarquia, o que deixa o branco
+   marcar agrupamento sem competir com o texto do atalho. */
+.atalhoTitulo {
+    color: #ffffff;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 0 0 6px 2px;
+}
+
+/* Irmão do .soundDivider: mesma cor, mesmo 1px. */
+.atalhoFilete {
+    background: #262626;
+    min-height: 1px;
+    margin: 0 0 8px 0;
+}
+
+.atalhoLinha {
+    margin-bottom: 4px;
+}
+
+/* Largura fixa na coluna das teclas: é ela que alinha todas as descrições
+   numa linha vertical só. Sem isso cada linha começa onde o combo dela
+   terminou, e a folha vira uma serra. */
+.atalhoTeclas {
+    min-width: 152px;
+}
+
+/* A tecla como tecla: caixinha com borda, do jeito que o teclado é. Foi o
+   que o dmenu nunca poderia dar — lá, "SUPER + T" era texto corrido no meio
+   da frase. */
+.tecla {
+    background: #141414;
+    border: 1px solid #262626;
+    border-radius: 4px;
+    color: #c8c8c8;
+    font-size: 11px;
+    padding: 1px 6px;
+}
+
+.atalhoMais {
+    color: #3d3d3d;
+    font-size: 10px;
+    margin: 0 3px;
+}
+
+.atalhoIcone {
+    color: #3d3d3d;
+    font-size: 13px;
+    margin-right: 8px;
+    min-width: 18px;
+}
+
+.atalhoTexto {
+    color: #8a8a8a;
+}

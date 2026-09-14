@@ -343,72 +343,82 @@ hl.window_rule({
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Binds/ for more
-hl.bind(mainMod .. " + T",      hl.dsp.exec_cmd(terminal), { description = "󰆍  Abrir o terminal" })
-hl.bind(mainMod .. " + W",      hl.dsp.window.close(), { description = "󰅖  Fechar a janela" })
-hl.bind(mainMod .. " + E",      hl.dsp.exec_cmd(fileManager), { description = "󰉋  Abrir o gerenciador de arquivos" })
-hl.bind(mainMod .. " + F",      hl.dsp.window.float({ action = "toggle" }), { description = "󰘔  Alternar janela flutuante" })
-hl.bind(mainMod .. " + SPACE",  hl.dsp.exec_cmd(menu), { description = "󰍉  Abrir o launcher" })
-hl.bind(mainMod .. " + C",      hl.dsp.window.pseudo(), { description = "󰕰  Alternar janela pseudo (dwindle)" })          -- dwindle
-hl.bind(mainMod .. " + J",      hl.dsp.layout("togglesplit"), { description = "󰕰  Alternar o sentido da divisão (dwindle)" })    -- dwindle
-hl.bind(mainMod .. " + B",      hl.dsp.exec_cmd(browser), { description = "󰖟  Abrir o navegador" })
-hl.bind(mainMod .. " + V",      hl.dsp.exec_cmd(menu .. " --provider clipboard"), { description = "󰆒  Histórico da área de transferência" })
-hl.bind(mainMod .. " + Y",      hl.dsp.exec_cmd("code"), { description = "󰅩  Abrir o VS Code" })
-hl.bind(mainMod .. " + D",      hl.dsp.exec_cmd("discord"), { description = "󰙯  Abrir o Discord" })
-hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"), { description = "󰐥  Encerrar a sessão" })
+hl.bind(mainMod .. " + T",      hl.dsp.exec_cmd(terminal), { description = "Programas|󰆍  Abrir o terminal" })
+hl.bind(mainMod .. " + W",      hl.dsp.window.close(), { description = "Janelas|󰅖  Fechar a janela" })
+hl.bind(mainMod .. " + E",      hl.dsp.exec_cmd(fileManager), { description = "Programas|󰉋  Abrir o gerenciador de arquivos" })
+hl.bind(mainMod .. " + F",      hl.dsp.window.float({ action = "toggle" }), { description = "Janelas|󰘔  Alternar janela flutuante" })
+hl.bind(mainMod .. " + SPACE",  hl.dsp.exec_cmd(menu), { description = "Programas|󰍉  Abrir o launcher" })
+hl.bind(mainMod .. " + C",      hl.dsp.window.pseudo(), { description = "Janelas|󰕰  Alternar janela pseudo (dwindle)" })          -- dwindle
+hl.bind(mainMod .. " + J",      hl.dsp.layout("togglesplit"), { description = "Janelas|󰕰  Alternar o sentido da divisão (dwindle)" })    -- dwindle
+hl.bind(mainMod .. " + B",      hl.dsp.exec_cmd(browser), { description = "Programas|󰖟  Abrir o navegador" })
+hl.bind(mainMod .. " + V",      hl.dsp.exec_cmd(menu .. " --provider clipboard"), { description = "Programas|󰆒  Histórico da área de transferência" })
+hl.bind(mainMod .. " + Y",      hl.dsp.exec_cmd("code"), { description = "Programas|󰅩  Abrir o VS Code" })
+hl.bind(mainMod .. " + D",      hl.dsp.exec_cmd("discord"), { description = "Programas|󰙯  Abrir o Discord" })
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"), { description = "Sistema|󰐥  Encerrar a sessão" })
 -- Espiar os widgets de desktop. Eles vivem na camada `bottom`, embaixo de
 -- toda janela — o que significa que numa tela cheia de janela eles existem e
 -- não aparecem. Este atalho sobe todos para `overlay` e desce de novo; o AGS
 -- trata o pedido em app.ts.
-hl.bind(mainMod .. " + G",      hl.dsp.exec_cmd("ags request peek"), { description = "󰈈  Espiar os widgets da área de trabalho" })
-hl.bind(mainMod .. " + SHIFT + S",      hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "󰄀  Print de uma região para a área de transferência" })
+hl.bind(mainMod .. " + G",      hl.dsp.exec_cmd("ags request peek"), { description = "Sistema|󰈈  Espiar os widgets da área de trabalho" })
+hl.bind(mainMod .. " + SHIFT + S",      hl.dsp.exec_cmd([[grim -g "$(slurp)" - | wl-copy]]), { description = "Sistema|󰄀  Print de uma região para a área de transferência" })
 -- Ctrl+Shift+Esc abre o gerenciador de tarefas no Windows; este é o mesmo
 -- gesto. Vai direto na aba de Processos, que é o reflexo de quem aperta.
-hl.bind(mainMod .. " + SHIFT + Escape", hl.dsp.exec_cmd("gnome-system-monitor -p"), { description = "󰄨  Abrir o monitor de sistema" })
+hl.bind(mainMod .. " + SHIFT + Escape", hl.dsp.exec_cmd("gnome-system-monitor -p"), { description = "Sistema|󰄨  Abrir o monitor de sistema" })
 
 -- Folha de atalhos. A lista sai do próprio `hyprctl binds`, ou seja, deste
 -- arquivo: o que faz isso funcionar é cada bind acima carregar `description`.
-hl.bind(mainMod .. " + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/shortcuts.sh"), { description = "󰌌  Ver todos os atalhos" })
+--
+-- O prefixo "Seção|" de cada description é o que agrupa a folha. Fica aqui, e
+-- não numa tabela dentro do renderizador, porque assim é impossível criar um
+-- bind e esquecer a seção dele: as duas coisas moram na mesma linha. Bind sem
+-- prefixo não some — cai numa seção "Outros" no fim da folha.
+--
+-- Quem desenha é o AGS (widget/Atalhos.tsx), não mais o Walker em dmenu: lá
+-- todo item é um label sem markup, então título de seção e filete só podiam
+-- ser linhas de texto com tracinho. O script antigo continua em
+-- hypr/scripts/shortcuts.sh, funcionando, caso um dia o AGS esteja fora do ar.
+hl.bind(mainMod .. " + A", hl.dsp.exec_cmd("ags request atalhos"), { description = "Sistema|󰌌  Ver todos os atalhos" })
 
 -- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }), { description = "󰁍  Focar a janela à esquerda" })
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { description = "󰁔  Focar a janela à direita" })
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }), { description = "󰁝  Focar a janela acima" })
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }), { description = "󰁅  Focar a janela abaixo" })
+hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }), { description = "Janelas|󰁍  Focar a janela à esquerda" })
+hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { description = "Janelas|󰁔  Focar a janela à direita" })
+hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }), { description = "Janelas|󰁝  Focar a janela acima" })
+hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }), { description = "Janelas|󰁅  Focar a janela abaixo" })
 
 -- Switch workspaces with mainMod + [0-9]
-hl.bind("SUPER + Tab",         hl.dsp.focus({ workspace = "+1" }), { description = "󰍹  Ir para a próxima área" })
-hl.bind("SUPER + SHIFT + Tab", hl.dsp.focus({ workspace = "-1" }), { description = "󰍹  Ir para a área anterior" })
+hl.bind("SUPER + Tab",         hl.dsp.focus({ workspace = "+1" }), { description = "Áreas de trabalho|󰍹  Ir para a próxima área" })
+hl.bind("SUPER + SHIFT + Tab", hl.dsp.focus({ workspace = "-1" }), { description = "Áreas de trabalho|󰍹  Ir para a área anterior" })
 
-hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }), { description = "󰍹  Ir para a área 1" })
-hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }), { description = "󰍹  Ir para a área 2" })
-hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }), { description = "󰍹  Ir para a área 3" })
-hl.bind("SUPER + 4", hl.dsp.focus({ workspace = 4 }), { description = "󰍹  Ir para a área 4" })
-hl.bind("SUPER + 5", hl.dsp.focus({ workspace = 5 }), { description = "󰍹  Ir para a área 5" })
-hl.bind("SUPER + 6", hl.dsp.focus({ workspace = 6 }), { description = "󰍹  Ir para a área 6" })
-hl.bind("SUPER + 7", hl.dsp.focus({ workspace = 7 }), { description = "󰍹  Ir para a área 7" })
-hl.bind("SUPER + 8", hl.dsp.focus({ workspace = 8 }), { description = "󰍹  Ir para a área 8" })
-hl.bind("SUPER + 9", hl.dsp.focus({ workspace = 9 }), { description = "󰍹  Ir para a área 9" })
-hl.bind("SUPER + 0", hl.dsp.focus({ workspace = 10 }), { description = "󰍹  Ir para a área 10" })
+hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }), { description = "Áreas de trabalho|󰍹  Ir para a área 1" })
+hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }), { description = "Áreas de trabalho|󰍹  Ir para a área 2" })
+hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }), { description = "Áreas de trabalho|󰍹  Ir para a área 3" })
+hl.bind("SUPER + 4", hl.dsp.focus({ workspace = 4 }), { description = "Áreas de trabalho|󰍹  Ir para a área 4" })
+hl.bind("SUPER + 5", hl.dsp.focus({ workspace = 5 }), { description = "Áreas de trabalho|󰍹  Ir para a área 5" })
+hl.bind("SUPER + 6", hl.dsp.focus({ workspace = 6 }), { description = "Áreas de trabalho|󰍹  Ir para a área 6" })
+hl.bind("SUPER + 7", hl.dsp.focus({ workspace = 7 }), { description = "Áreas de trabalho|󰍹  Ir para a área 7" })
+hl.bind("SUPER + 8", hl.dsp.focus({ workspace = 8 }), { description = "Áreas de trabalho|󰍹  Ir para a área 8" })
+hl.bind("SUPER + 9", hl.dsp.focus({ workspace = 9 }), { description = "Áreas de trabalho|󰍹  Ir para a área 9" })
+hl.bind("SUPER + 0", hl.dsp.focus({ workspace = 10 }), { description = "Áreas de trabalho|󰍹  Ir para a área 10" })
 
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
-hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }), { description = "󰭎  Mover a janela para a área 1" })
-hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }), { description = "󰭎  Mover a janela para a área 2" })
-hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }), { description = "󰭎  Mover a janela para a área 3" })
-hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }), { description = "󰭎  Mover a janela para a área 4" })
-hl.bind(mainMod .. " + SHIFT + 5", hl.dsp.window.move({ workspace = 5 }), { description = "󰭎  Mover a janela para a área 5" })
-hl.bind(mainMod .. " + SHIFT + 6", hl.dsp.window.move({ workspace = 6 }), { description = "󰭎  Mover a janela para a área 6" })
-hl.bind(mainMod .. " + SHIFT + 7", hl.dsp.window.move({ workspace = 7 }), { description = "󰭎  Mover a janela para a área 7" })
-hl.bind(mainMod .. " + SHIFT + 8", hl.dsp.window.move({ workspace = 8 }), { description = "󰭎  Mover a janela para a área 8" })
-hl.bind(mainMod .. " + SHIFT + 9", hl.dsp.window.move({ workspace = 9 }), { description = "󰭎  Mover a janela para a área 9" })
-hl.bind(mainMod .. " + SHIFT + 0", hl.dsp.window.move({ workspace = 10 }), { description = "󰭎  Mover a janela para a área 10" })
+hl.bind(mainMod .. " + SHIFT + 1", hl.dsp.window.move({ workspace = 1 }), { description = "Mover janelas|󰭎  Mover a janela para a área 1" })
+hl.bind(mainMod .. " + SHIFT + 2", hl.dsp.window.move({ workspace = 2 }), { description = "Mover janelas|󰭎  Mover a janela para a área 2" })
+hl.bind(mainMod .. " + SHIFT + 3", hl.dsp.window.move({ workspace = 3 }), { description = "Mover janelas|󰭎  Mover a janela para a área 3" })
+hl.bind(mainMod .. " + SHIFT + 4", hl.dsp.window.move({ workspace = 4 }), { description = "Mover janelas|󰭎  Mover a janela para a área 4" })
+hl.bind(mainMod .. " + SHIFT + 5", hl.dsp.window.move({ workspace = 5 }), { description = "Mover janelas|󰭎  Mover a janela para a área 5" })
+hl.bind(mainMod .. " + SHIFT + 6", hl.dsp.window.move({ workspace = 6 }), { description = "Mover janelas|󰭎  Mover a janela para a área 6" })
+hl.bind(mainMod .. " + SHIFT + 7", hl.dsp.window.move({ workspace = 7 }), { description = "Mover janelas|󰭎  Mover a janela para a área 7" })
+hl.bind(mainMod .. " + SHIFT + 8", hl.dsp.window.move({ workspace = 8 }), { description = "Mover janelas|󰭎  Mover a janela para a área 8" })
+hl.bind(mainMod .. " + SHIFT + 9", hl.dsp.window.move({ workspace = 9 }), { description = "Mover janelas|󰭎  Mover a janela para a área 9" })
+hl.bind(mainMod .. " + SHIFT + 0", hl.dsp.window.move({ workspace = 10 }), { description = "Mover janelas|󰭎  Mover a janela para a área 10" })
 
 -- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + M",         hl.dsp.workspace.toggle_special("magic"), { description = "󰁨  Mostrar ou esconder a área mágica" })
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.window.move({ workspace = "special:magic" }), { description = "󰁨  Mover a janela para a área mágica" })
+hl.bind(mainMod .. " + M",         hl.dsp.workspace.toggle_special("magic"), { description = "Áreas de trabalho|󰁨  Mostrar ou esconder a área mágica" })
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.window.move({ workspace = "special:magic" }), { description = "Mover janelas|󰁨  Mover a janela para a área mágica" })
 
 -- Scroll through existing workspaces with mainMod + scroll
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), { description = "󰍽  Próxima área (roda do mouse)" })
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }), { description = "󰍽  Área anterior (roda do mouse)" })
+hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), { description = "Áreas de trabalho|󰍽  Próxima área (roda do mouse)" })
+hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }), { description = "Áreas de trabalho|󰍽  Área anterior (roda do mouse)" })
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 -- Equivalente ao `bindm` do .conf. Sem flag: drag()/resize() marcam
@@ -416,19 +426,19 @@ hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }), { descr
 -- o press inicia e o release encerra o arrasto. (O `{ mouse = true }` que o
 -- exemplo em /usr/share/hypr/hyprland.lua passa é morto: hl.bind nunca atribui
 -- kb.mouse — só o lê para uma checagem de exclusividade.)
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { description = "󰍽  Arrastar a janela" })
-hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { description = "󰘖  Redimensionar a janela" })
+hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { description = "Janelas|󰍽  Arrastar a janela" })
+hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { description = "Janelas|󰘖  Redimensionar a janela" })
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { description = "󰕾  Aumentar o volume", locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { description = "󰖀  Diminuir o volume", locked = true, repeating = true })
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { description = "󰝟  Mudo", locked = true, repeating = true })
-hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { description = "󰍬  Mudo do microfone", locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { description = "󰖙  Aumentar o brilho", locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { description = "󰖙  Diminuir o brilho", locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { description = "Mídia e teclas especiais|󰕾  Aumentar o volume", locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { description = "Mídia e teclas especiais|󰖀  Diminuir o volume", locked = true, repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { description = "Mídia e teclas especiais|󰝟  Mudo", locked = true, repeating = true })
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { description = "Mídia e teclas especiais|󰍬  Mudo do microfone", locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { description = "Mídia e teclas especiais|󰖙  Aumentar o brilho", locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { description = "Mídia e teclas especiais|󰖙  Diminuir o brilho", locked = true, repeating = true })
 
 -- Requires playerctl
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { description = "󰒭  Próxima faixa", locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { description = "󰐊  Pausar ou retomar", locked = true })
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { description = "󰐊  Pausar ou retomar", locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { description = "󰒮  Faixa anterior", locked = true })
+hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { description = "Mídia e teclas especiais|󰒭  Próxima faixa", locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { description = "Mídia e teclas especiais|󰐊  Pausar ou retomar", locked = true })
+hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { description = "Mídia e teclas especiais|󰐊  Pausar ou retomar", locked = true })
+hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { description = "Mídia e teclas especiais|󰒮  Faixa anterior", locked = true })
