@@ -950,3 +950,67 @@ window.Desktop {
 .ctl:disabled label {
     color: #262626;
 }
+
+/* ------------------------------------------------------------ sensores */
+
+.sensorRow {
+    margin-bottom: 4px;
+}
+
+.sensorRow:last-child {
+    margin-bottom: 0;
+}
+
+.sensorIcon {
+    color: #3d3d3d;
+    font-size: 13px;
+    margin-right: 6px;
+}
+
+/* Largura fixa na etiqueta para CPU e GPU alinharem as temperaturas numa
+   coluna só. Sem isso, "CPU" e "GPU" têm larguras diferentes na SF Pro e os
+   números ficam a um pixel de distância um do outro — que é exatamente o
+   tipo de desalinhamento que a gente vê sem saber o que está vendo. */
+.sensorName {
+    color: #8a8a8a;
+    min-width: 32px;
+}
+
+.sensorTemp {
+    color: #c8c8c8;
+    font-size: 15px;
+    min-width: 46px;
+}
+
+/* Acima do temp_max do próprio sensor. Branco puro, o mesmo peso do foco da
+   barra: sem cor, o destaque é o contraste. */
+.sensorTemp.quente {
+    color: #ffffff;
+}
+
+.sensorInfo {
+    color: #3d3d3d;
+    font-size: 11px;
+}
+
+/* ---------------------------------------------------------------- rede */
+
+.netRates {
+    margin-bottom: 4px;
+}
+
+.netArrow {
+    color: #3d3d3d;
+    font-size: 13px;
+    margin-right: 4px;
+}
+
+.netValue {
+    color: #ffffff;
+    font-size: 15px;
+}
+
+.netTotal {
+    color: #3d3d3d;
+    font-size: 11px;
+}

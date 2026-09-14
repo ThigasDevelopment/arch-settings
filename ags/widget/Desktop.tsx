@@ -3,6 +3,8 @@ import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createComputed, createState } from "ags"
 import type { Corner, DesktopWidget } from "./desktop/Card"
 import Media from "./desktop/Media"
+import Sensores from "./desktop/Sensores"
+import Rede from "./desktop/Rede"
 
 /* Widgets de desktop — a camada de baixo.
  *
@@ -28,7 +30,7 @@ import Media from "./desktop/Media"
 /* O registro. Adicionar um widget novo é escrever o módulo dele em
    widget/desktop/ e acrescentar aqui — o resto (janela, camada, canto,
    visibilidade) já está resolvido. */
-const WIDGETS: DesktopWidget[] = [Media]
+const WIDGETS: DesktopWidget[] = [Media, Sensores, Rede]
 
 /* Espiar.
  *
