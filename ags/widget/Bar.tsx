@@ -1,6 +1,6 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
-import { createBinding, createComputed, For, With } from "ags"
+import { createBinding, createComputed, createState, For, With } from "ags"
 import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
 import GLib from "gi://GLib"
@@ -46,12 +46,53 @@ const monitor = (aba: string) =>
 // janelas. Uma régua fixa dá posição estável para o olho.
 const WORKSPACES = [1, 2, 3, 4, 5]
 
+// Quantas janelas cada workspace tem.
+//
+// Recalculado nos SINAIS do AstalHyprland, e não por ligação de propriedade.
+// Medido: `notify::workspaces` e `notify::clients` NÃO emitem quando uma
+// janela abre ou fecha numa workspace que já existe — só client-added,
+// client-removed e client-moved emitem.
+//
+// Essa era a causa de dois defeitos que pareciam separados: workspace cheia
+// pintada como vazia, e tooltip mostrando a contagem de minutos atrás. Os dois
+// liam de `createBinding(hypr, "workspaces")`, que só dispara quando a LISTA
+// de workspaces muda; abrir janela não muda essa lista. Na prática eles só
+// recalculavam de carona, quando o FOCO mudava — daí o comportamento
+// intermitente, que parecia aleatório.
+//
+// Conta a partir de hypr.clients, a lista achatada, em vez de workspace.clients:
+// medido também, o array dentro do objeto Workspace pode estar velho no
+// instante em que o sinal chega.
+const [ocupacao, setOcupacao] = createState<Map<number, number>>(new Map())
+
+function recontarJanelas() {
+    const mapa = new Map<number, number>()
+
+    for (const cliente of AstalHyprland.get_default().clients) {
+        const id = cliente.workspace?.id
+        if (typeof id === "number") mapa.set(id, (mapa.get(id) ?? 0) + 1)
+    }
+
+    setOcupacao(mapa)
+}
+
+for (const sinal of [
+    "client-added",
+    "client-removed",
+    "client-moved",       // mover janela entre workspaces muda DUAS contagens
+    "workspace-added",
+    "workspace-removed",
+]) {
+    AstalHyprland.get_default().connect(sinal, recontarJanelas)
+}
+
+recontarJanelas()
+
 // Um botão da régua. Extraído porque agora ele nasce de duas origens: a régua
 // fixa de 1 a 5 e as workspaces que existem fora dela.
 function WsButton({ id }: { id: number }) {
     const hypr = AstalHyprland.get_default()
     const focused = createBinding(hypr, "focusedWorkspace")
-    const existing = createBinding(hypr, "workspaces")
 
     return (
         <button
@@ -61,14 +102,12 @@ function WsButton({ id }: { id: number }) {
                pílula sai cortada em cima e embaixo. */
             valign={Gtk.Align.CENTER}
             heightRequest={22}
-            class={createComputed([focused, existing], (f, all) => {
+            class={createComputed([focused, ocupacao], (f, ocup) => {
                 if (f?.id === id) return "ws active"
-                // "ocupada" = já existe no compositor, ou seja, tem janela
-                return all.some((w) => w.id === id) ? "ws occupied" : "ws"
+                return (ocup.get(id) ?? 0) > 0 ? "ws occupied" : "ws"
             })}
-            tooltipText={createComputed([existing], (all) => {
-                const ws = all.find((w) => w.id === id)
-                const n = ws?.clients?.length ?? 0
+            tooltipText={ocupacao((ocup: Map<number, number>) => {
+                const n = ocup.get(id) ?? 0
                 if (n === 0) return `Área ${id}  ·  vazia`
                 return `Área ${id}  ·  ${n} ${n === 1 ? "janela" : "janelas"}`
             })}
@@ -131,7 +170,6 @@ function Magic({ monitor }: { monitor: AstalHyprland.Monitor }) {
 function Workspaces() {
     const hypr = AstalHyprland.get_default()
     const focused = createBinding(hypr, "focusedWorkspace")
-    const existing = createBinding(hypr, "workspaces")
 
     // Workspaces fora da régua fixa, em ordem, sempre depois do 5.
     //
@@ -146,10 +184,11 @@ function Workspaces() {
     // estar na lista.
     //
     // id < 0 fica de fora: é special, e o Magic cuida dela.
-    const extras = createComputed([existing, focused], (all, f) => {
-        const ids = all
-            .filter((w) => w.id > 0 && !WORKSPACES.includes(w.id))
-            .map((w) => w.id)
+    const extras = createComputed([ocupacao, focused], (ocup, f) => {
+        // Só workspaces que de fato têm janela. A ocupação não guarda as
+        // vazias, então a em foco entra à força logo abaixo — é o caso de
+        // você estar numa área recém-criada, ainda sem nada dentro.
+        const ids = [...ocup.keys()].filter((id) => id > 0 && !WORKSPACES.includes(id))
 
         if (f && f.id > 0 && !WORKSPACES.includes(f.id) && !ids.includes(f.id)) {
             ids.push(f.id)
