@@ -40,15 +40,27 @@ function texto(caminho: string): string {
  * temperatura do chipset — ou nada, sem avisar. */
 const CORETEMP = (() => {
     const base = "/sys/class/hwmon"
+    let dir: GLib.Dir
+
     try {
-        const dir = GLib.Dir.open(base, 0)
+        dir = GLib.Dir.open(base, 0)
+    } catch {
+        /* sem /sys/class/hwmon: máquina virtual, container */
+        return null
+    }
+
+    /* Roda uma vez só, na subida — mas fecha do mesmo jeito. Um DIR* aberto
+       para sempre é um fd a menos para o resto do processo, e a regra de
+       fechar na mão vale igual aqui e no poll de rede. */
+    try {
         let nome: string | null
         while ((nome = dir.read_name()) !== null) {
             if (texto(`${base}/${nome}/name`) === "coretemp") return `${base}/${nome}`
         }
-    } catch {
-        /* sem /sys/class/hwmon: máquina virtual, container */
+    } finally {
+        dir.close()
     }
+
     return null
 })()
 

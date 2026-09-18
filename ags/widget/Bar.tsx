@@ -464,35 +464,44 @@ function lerPerifericos(): Periferico[] {
         return []
     }
 
+    /* O GLib.Dir é um DIR* aberto, e fechar é na mão: o GJS só chamaria
+       g_dir_close quando o wrapper JS fosse coletado, e o coletor não roda
+       por pressão de descritor. Num poll isso vaza um fd por leitura até o
+       processo bater no limite de 1024 e morrer com "Too many open files" —
+       foi exatamente o que derrubava o AGS depois de alguns minutos. */
     const achados: Periferico[] = []
     let entrada: string | null
 
-    while ((entrada = dir.read_name()) !== null) {
-        const base = `${PSU}/${entrada}`
+    try {
+        while ((entrada = dir.read_name()) !== null) {
+            const base = `${PSU}/${entrada}`
 
-        // scope=Device é o que separa periférico da bateria do próprio
-        // computador (scope=System). Este desktop não tem a segunda, mas um
-        // notebook teria, e ela não pertence a esta métrica.
-        if (readOpt(`${base}/scope`) !== "Device") continue
+            // scope=Device é o que separa periférico da bateria do próprio
+            // computador (scope=System). Este desktop não tem a segunda, mas um
+            // notebook teria, e ela não pertence a esta métrica.
+            if (readOpt(`${base}/scope`) !== "Device") continue
 
-        const cap = readOpt(`${base}/capacity`)
-        if (cap === "") continue
+            const cap = readOpt(`${base}/capacity`)
+            if (cap === "") continue
 
-        const nivel = Number(cap)
-        if (!Number.isFinite(nivel)) continue
+            const nivel = Number(cap)
+            if (!Number.isFinite(nivel)) continue
 
-        const status = readOpt(`${base}/status`)
+            const status = readOpt(`${base}/status`)
 
-        achados.push({
-            nome: readOpt(`${base}/model_name`) || entrada,
-            nivel,
-            carregando: status === "Charging" || status === "Full",
-        })
+            achados.push({
+                nome: readOpt(`${base}/model_name`) || entrada,
+                nivel,
+                carregando: status === "Charging" || status === "Full",
+            })
+        }
+
+        // Menor nível primeiro: é ele que a barra mostra, e é ele que importa.
+        // Um empate cai no nome, só para a ordem não dançar entre leituras.
+        return achados.sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome))
+    } finally {
+        dir.close()
     }
-
-    // Menor nível primeiro: é ele que a barra mostra, e é ele que importa.
-    // Um empate cai no nome, só para a ordem não dançar entre leituras.
-    return achados.sort((a, b) => a.nivel - b.nivel || a.nome.localeCompare(b.nome))
 }
 
 // 5s, e não os 30s originais.
@@ -531,57 +540,70 @@ function lerBateriaSistema(): Bateria | null {
         return null
     }
 
+    /* O GLib.Dir é um DIR* aberto, e fechar é na mão: o GJS só chamaria
+       g_dir_close quando o wrapper JS fosse coletado, e o coletor não roda
+       por pressão de descritor. Num poll isso vaza um fd por leitura até o
+       processo bater no limite de 1024 e morrer com "Too many open files" —
+       foi exatamente o que derrubava o AGS depois de alguns minutos.
+
+       O `finally` aqui não é zelo: esta função devolve de DENTRO do laço
+       assim que acha a bateria, e esse é o caminho comum. Um close no fim
+       do corpo nunca seria alcançado. */
     let entrada: string | null
 
-    while ((entrada = dir.read_name()) !== null) {
-        const base = `${PSU}/${entrada}`
+    try {
+        while ((entrada = dir.read_name()) !== null) {
+            const base = `${PSU}/${entrada}`
 
-        if (readOpt(`${base}/type`) !== "Battery") continue
+            if (readOpt(`${base}/type`) !== "Battery") continue
 
-        // scope ausente = System. Periférico SEMPRE declara scope=Device, então
-        // tratar a ausência como sistema é seguro e cobre kernels antigos que
-        // nem escrevem o arquivo para a bateria interna.
-        const scope = readOpt(`${base}/scope`)
-        if (scope !== "" && scope !== "System") continue
+            // scope ausente = System. Periférico SEMPRE declara scope=Device, então
+            // tratar a ausência como sistema é seguro e cobre kernels antigos que
+            // nem escrevem o arquivo para a bateria interna.
+            const scope = readOpt(`${base}/scope`)
+            if (scope !== "" && scope !== "System") continue
 
-        const cap = readOpt(`${base}/capacity`)
-        if (cap === "") continue
+            const cap = readOpt(`${base}/capacity`)
+            if (cap === "") continue
 
-        const nivel = Number(cap)
-        if (!Number.isFinite(nivel)) continue
+            const nivel = Number(cap)
+            if (!Number.isFinite(nivel)) continue
 
-        const status = readOpt(`${base}/status`)
+            const status = readOpt(`${base}/status`)
 
-        // Tempo restante a partir de energia/potência, quando o firmware
-        // publica os dois. Nem todo notebook publica; sem eles a linha some do
-        // tooltip em vez de mostrar um número inventado.
-        //
-        // Há duas convenções e é preciso aceitar as duas: energy_* (µWh/µW) em
-        // uns firmwares, charge_*/current_* (µAh/µA) em outros. A divisão dá
-        // horas nas duas, porque as unidades se cancelam.
-        const carga = Number(readOpt(`${base}/energy_now`) || readOpt(`${base}/charge_now`))
-        const fluxo = Number(readOpt(`${base}/power_now`) || readOpt(`${base}/current_now`))
+            // Tempo restante a partir de energia/potência, quando o firmware
+            // publica os dois. Nem todo notebook publica; sem eles a linha some do
+            // tooltip em vez de mostrar um número inventado.
+            //
+            // Há duas convenções e é preciso aceitar as duas: energy_* (µWh/µW) em
+            // uns firmwares, charge_*/current_* (µAh/µA) em outros. A divisão dá
+            // horas nas duas, porque as unidades se cancelam.
+            const carga = Number(readOpt(`${base}/energy_now`) || readOpt(`${base}/charge_now`))
+            const fluxo = Number(readOpt(`${base}/power_now`) || readOpt(`${base}/current_now`))
 
-        let restante = ""
+            let restante = ""
 
-        if (Number.isFinite(carga) && Number.isFinite(fluxo) && fluxo > 0) {
-            const horas = status === "Charging" ? 0 : carga / fluxo
-            if (status !== "Charging" && horas > 0 && horas < 48) {
-                const h = Math.floor(horas)
-                const m = Math.round((horas - h) * 60)
-                restante = h > 0 ? `${h}h ${m}min restantes` : `${m}min restantes`
+            if (Number.isFinite(carga) && Number.isFinite(fluxo) && fluxo > 0) {
+                const horas = status === "Charging" ? 0 : carga / fluxo
+                if (status !== "Charging" && horas > 0 && horas < 48) {
+                    const h = Math.floor(horas)
+                    const m = Math.round((horas - h) * 60)
+                    restante = h > 0 ? `${h}h ${m}min restantes` : `${m}min restantes`
+                }
+            }
+
+            return {
+                nivel,
+                carregando: status === "Charging",
+                cheia: status === "Full",
+                restante,
             }
         }
 
-        return {
-            nivel,
-            carregando: status === "Charging",
-            cheia: status === "Full",
-            restante,
-        }
+        return null
+    } finally {
+        dir.close()
     }
-
-    return null
 }
 
 const bateria = createPoll<Bateria | null>(null, INTERVALO_BATERIA, lerBateriaSistema)

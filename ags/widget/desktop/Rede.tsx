@@ -36,8 +36,23 @@ function texto(caminho: string): string {
  * diretório uma vez por segundo é uma listagem de duas entradas nesta
  * máquina — mais barato que qualquer forma de acompanhar isso por evento. */
 function interfaceAtiva(): string | null {
+    let dir: GLib.Dir
+
     try {
-        const dir = GLib.Dir.open(NET, 0)
+        dir = GLib.Dir.open(NET, 0)
+    } catch {
+        return null
+    }
+
+    /* O GLib.Dir é um DIR* aberto, e fechar é na mão: o GJS só chamaria
+       g_dir_close quando o wrapper JS fosse coletado, e o coletor não roda
+       por pressão de descritor. Num poll de um segundo isso vaza um fd por
+       leitura, e o processo morre de "Too many open files" em poucos minutos
+       de máquina parada — foi o que derrubava o AGS no ocioso.
+
+       O `finally` é obrigatório e não zelo: a função devolve de DENTRO do
+       laço assim que acha a interface no ar, que é o caminho comum. */
+    try {
         let nome: string | null
         let reserva: string | null = null
 
@@ -49,9 +64,10 @@ function interfaceAtiva(): string | null {
                que um cartão vazio. */
             if (!reserva) reserva = nome
         }
+
         return reserva
-    } catch {
-        return null
+    } finally {
+        dir.close()
     }
 }
 
